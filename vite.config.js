@@ -70,11 +70,12 @@ export default defineConfig({
         chunkFileNames: (chunkInfo) => {
           // Inline all chunks used by content script into the content script itself
           const moduleIds = chunkInfo.moduleIds || [];
-          const isContentScriptDep = moduleIds.some(id => 
-            id.includes('src/content/') || 
-            id.includes('src/ai/') ||
-            id.includes('src/utils/') ||
-            id.includes('src/tts/')
+          const isContentScriptDep = moduleIds.some(
+            (id) =>
+              id.includes('src/content/') ||
+              id.includes('src/ai/') ||
+              id.includes('src/utils/') ||
+              id.includes('src/tts/')
           );
           if (isContentScriptDep && chunkInfo.name !== 'content') {
             // These will be inlined via manualChunks
@@ -85,7 +86,12 @@ export default defineConfig({
         assetFileNames: 'assets/[name]-[hash].[ext]',
         manualChunks: (id) => {
           // Inline all content script dependencies into the content script entry
-          if (id.includes('src/content/') || id.includes('src/ai/') || id.includes('src/utils/storage') || id.includes('src/tts/')) {
+          if (
+            id.includes('src/content/') ||
+            id.includes('src/ai/') ||
+            id.includes('src/utils/storage') ||
+            id.includes('src/tts/')
+          ) {
             return 'content'; // Force all content script deps into content chunk
           }
         },
