@@ -1,0 +1,33 @@
+WebPodcast Chrome Extension - Requirements Summary
+
+GOAL: Convert any webpage to 2-person podcast-style conversation
+APPROACH: Hybrid (AI + Rule-based)
+STATUS: Core implementation complete
+
+TECH STACK:
+- React.js (UI)
+- Transformers.js (T5-small AI model, ~150-200MB)
+- Readability.js (Text extraction)
+- Web Speech API (TTS - temporary, Piper TTS planned)
+- Chrome Extension Manifest V3
+
+FEATURES:
+✅ AI dialogue conversion (T5-small)
+✅ Rule-based post-processing
+✅ Two-voice narration
+✅ Speed control
+✅ Voice/accent selection
+✅ 100% client-side (no server calls)
+✅ Free (no API costs)
+
+SIZE:
+- Core extension: ~5-10MB
+- T5-small model: ~150-200MB (downloaded on first use)
+- TTS voices: ~50MB (when Piper integrated)
+- Total after setup: ~200-260MB (cached locally)
+
+NEXT STEPS:
+- Replace placeholder icons
+- Integrate Piper TTS for better voice quality
+- Test on various websites
+- Polish UI/UX
