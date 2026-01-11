@@ -243,7 +243,7 @@ export class TTSEngine {
     this.isPlaying = false;
     this.queue = [];
     this.currentIndex = 0;
-    
+
     try {
       // Cancel all speech immediately (synchronous)
       this.synthesis.cancel();
