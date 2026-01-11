@@ -6,9 +6,10 @@ let isModelLoading = false;
 
 /**
  * Initialize the T5-small model (lazy loading)
+ * Preload this in the background for faster first use
  * @returns {Promise}
  */
-async function initializeModel() {
+export async function initializeModel() {
   if (generator) {
     return generator;
   }

@@ -179,13 +179,12 @@ export class TTSEngine {
       };
 
       utterance.onerror = (error) => {
-        console.error('Speech error:', error);
-        // Don't reject if we're stopped, just resolve
-        if (this.isPlaying) {
-          reject(error);
-        } else {
-          resolve();
+        // Ignore 'interrupted' errors - they're expected when stopping
+        if (error.error !== 'interrupted') {
+          console.error('Speech error:', error);
         }
+        // Always resolve - don't reject on errors, especially interruptions
+        resolve();
       };
 
       // Check again before speaking
@@ -223,18 +222,21 @@ export class TTSEngine {
   }
 
   /**
-   * Stop playback
+   * Stop playback - immediate response
    */
   stop() {
+    // Set flag first to prevent new utterances
     this.isPlaying = false;
-    try {
-      this.synthesis.cancel();
-    } catch (error) {
-      console.error('Error stopping speech:', error);
-    }
     this.queue = [];
-    this.currentUtterance = null;
     this.currentIndex = 0;
+    
+    try {
+      // Cancel all speech immediately (synchronous)
+      this.synthesis.cancel();
+      this.currentUtterance = null;
+    } catch (error) {
+      // Ignore errors - cancel is best effort
+    }
   }
 
   /**
