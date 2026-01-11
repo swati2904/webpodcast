@@ -112,8 +112,12 @@ export class TTSEngine {
 
   /**
    * Speak dialogue segments
+   * @param {Array} segments - Dialogue segments to speak
+   * @param {Function} onProgress - Progress callback (current, total)
+   * @param {Function} onSegmentStart - Called when a segment starts (index, segment)
+   * @param {Function} onSegmentEnd - Called when a segment ends (index, segment)
    */
-  async speakDialogue(segments, onProgress) {
+  async speakDialogue(segments, onProgress, onSegmentStart, onSegmentEnd) {
     this.queue = segments;
     this.isPlaying = true;
     this.currentIndex = 0;
@@ -137,7 +141,17 @@ export class TTSEngine {
           await new Promise((resolve) => setTimeout(resolve, 300));
         }
 
+        // Call onSegmentStart before speaking
+        if (onSegmentStart && this.isPlaying) {
+          onSegmentStart(i, segment);
+        }
+
         await this.speak(segment.text, voice, this.settings.speed);
+
+        // Call onSegmentEnd after speaking completes
+        if (onSegmentEnd && this.isPlaying) {
+          onSegmentEnd(i, segment);
+        }
 
         if (onProgress && this.isPlaying) {
           onProgress(i + 1, segments.length);

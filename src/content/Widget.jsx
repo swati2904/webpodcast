@@ -1,8 +1,63 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { convertToDialogue, initializeModel } from '@/ai/dialogueConverter.js';
 import { getSettings, saveSettings } from '@/utils/storage.js';
 import { TTSEngine } from '@/tts/ttsEngine.js';
 import { extractPageContent } from './contentExtractor.js';
+
+// Memoized Message component for performance
+const Message = React.memo(({ message, isActive }) => {
+  const isSpeaker1 = message.speaker === 'speaker1';
+  
+  return (
+    <div 
+      className={`webpodcast-message ${isSpeaker1 ? 'webpodcast-message-speaker1' : 'webpodcast-message-speaker2'} ${isActive ? 'webpodcast-message-active' : ''}`}
+    >
+      <div className="webpodcast-message-bubble">
+        <div className="webpodcast-message-text">{message.text}</div>
+      </div>
+    </div>
+  );
+});
+
+Message.displayName = 'Message';
+
+// MessageList component with auto-scroll
+const MessageList = React.memo(({ messages, activeMessageId, scrollContainerRef }) => {
+  const messagesEndRef = useRef(null);
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    if (messagesEndRef.current && scrollContainerRef.current) {
+      // Use requestAnimationFrame for smooth scrolling
+      requestAnimationFrame(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      });
+    }
+  }, [messages, activeMessageId, scrollContainerRef]);
+
+  if (messages.length === 0) {
+    return (
+      <div className="webpodcast-messages-empty">
+        <p>Conversation will appear here...</p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {messages.map((message) => (
+        <Message
+          key={message.id}
+          message={message}
+          isActive={message.id === activeMessageId}
+        />
+      ))}
+      <div ref={messagesEndRef} />
+    </>
+  );
+});
+
+MessageList.displayName = 'MessageList';
 
 function Widget() {
   const [isOpen, setIsOpen] = useState(false);
@@ -10,12 +65,15 @@ function Widget() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [modelProgress, setModelProgress] = useState(0);
+  const [messages, setMessages] = useState([]);
+  const [activeMessageId, setActiveMessageId] = useState(null);
   const [settings, setSettings] = useState({
     speed: 1.0,
     accent1: 'en-US',
     accent2: 'en-IN'
   });
   const [ttsEngine, setTtsEngine] = useState(null);
+  const scrollContainerRef = useRef(null);
 
   useEffect(() => {
     // Initialize TTS engine
@@ -55,6 +113,9 @@ function Widget() {
   const handleConvert = async () => {
     setIsProcessing(true);
     setModelProgress(0);
+    // Clear messages for new conversation
+    setMessages([]);
+    setActiveMessageId(null);
 
     try {
       // Extract content directly since we're in the content script context
@@ -81,20 +142,47 @@ function Widget() {
       setIsPlaying(true);
       setProgress({ current: 0, total: dialogueSegments.length });
 
+      // Callback when segment starts - add message to UI
+      const onSegmentStart = (index, segment) => {
+        const messageId = `msg-${index}-${Date.now()}`;
+        const newMessage = {
+          id: messageId,
+          speaker: segment.speaker,
+          text: segment.text,
+          timestamp: Date.now()
+        };
+        
+        setMessages(prev => [...prev, newMessage]);
+        setActiveMessageId(messageId);
+      };
+
+      // Callback when segment ends - remove active state
+      const onSegmentEnd = (index, segment) => {
+        setActiveMessageId(null);
+      };
+
       // Play dialogue (this is async but non-blocking)
-      ttsEngine.speakDialogue(dialogueSegments, (current, total) => {
-        setProgress({ current, total });
-      }).then(() => {
+      ttsEngine.speakDialogue(
+        dialogueSegments,
+        (current, total) => {
+          setProgress({ current, total });
+        },
+        onSegmentStart,
+        onSegmentEnd
+      ).then(() => {
         setIsPlaying(false);
+        setActiveMessageId(null);
       }).catch((error) => {
         console.error('Playback error:', error);
         setIsPlaying(false);
+        setActiveMessageId(null);
       });
     } catch (error) {
       console.error('Error:', error);
       alert(`Error: ${error.message}`);
       setIsProcessing(false);
       setIsPlaying(false);
+      setActiveMessageId(null);
     }
   };
 
@@ -102,6 +190,7 @@ function Widget() {
     // Immediate UI update for responsive feel
     setIsPlaying(false);
     setProgress({ current: 0, total: 0 });
+    setActiveMessageId(null);
     
     // Stop TTS engine (synchronous, fast)
     if (ttsEngine) {
@@ -182,6 +271,15 @@ function Widget() {
 
           {isPlaying && (
             <div className="webpodcast-playing">
+              {/* Chat container */}
+              <div className="webpodcast-chat-container" ref={scrollContainerRef}>
+                <MessageList 
+                  messages={messages}
+                  activeMessageId={activeMessageId}
+                  scrollContainerRef={scrollContainerRef}
+                />
+              </div>
+
               <div className="webpodcast-controls">
                 <button className="webpodcast-btn-stop" onClick={handleStop}>
                   ⏹️ Stop
