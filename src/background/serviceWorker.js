@@ -24,6 +24,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       // Popup might not be open, ignore error
     });
   }
+
 });
 
 // Handle extension installation

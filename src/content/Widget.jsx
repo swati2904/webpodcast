@@ -61,6 +61,7 @@ MessageList.displayName = 'MessageList';
 
 function Widget() {
   const [isOpen, setIsOpen] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
@@ -70,20 +71,37 @@ function Widget() {
   const [settings, setSettings] = useState({
     speed: 1.0,
     accent1: 'en-US',
-    accent2: 'en-IN'
+    accent2: 'en-IN',
+    theme: 'dark'
   });
+  const [saved, setSaved] = useState(false);
   const [ttsEngine, setTtsEngine] = useState(null);
   const scrollContainerRef = useRef(null);
+  const containerRef = useRef(null);
 
   useEffect(() => {
     // Initialize TTS engine
     const engine = new TTSEngine();
     setTtsEngine(engine);
 
+    // Find container element for theme
+    containerRef.current = document.getElementById('webpodcast-widget-container');
+
     // Load settings
     getSettings().then(savedSettings => {
-      setSettings(savedSettings);
-      engine.setSettings(savedSettings);
+      const loadedSettings = {
+        speed: savedSettings.speed || 1.0,
+        accent1: savedSettings.accent1 || 'en-US',
+        accent2: savedSettings.accent2 || 'en-IN',
+        theme: savedSettings.theme || 'dark'
+      };
+      setSettings(loadedSettings);
+      engine.setSettings(loadedSettings);
+      
+      // Apply theme to container
+      if (containerRef.current) {
+        containerRef.current.setAttribute('data-theme', loadedSettings.theme);
+      }
     });
 
     // Listen for model loading progress
@@ -109,6 +127,13 @@ function Widget() {
       }
     };
   }, []);
+
+  // Update theme when settings change
+  useEffect(() => {
+    if (containerRef.current && settings.theme) {
+      containerRef.current.setAttribute('data-theme', settings.theme);
+    }
+  }, [settings.theme]);
 
   const handleConvert = async () => {
     setIsProcessing(true);
@@ -227,98 +252,178 @@ function Widget() {
       {/* Widget panel */}
       {isOpen && (
         <div className="webpodcast-widget">
-          <div className="webpodcast-header">
-            <h2>🎙️ WebPodcast</h2>
-            <button 
-              className="webpodcast-close-btn"
-              onClick={() => {
-                // Stop any playback before closing
-                if (ttsEngine && isPlaying) {
-                  ttsEngine.stop();
-                }
-                setIsOpen(false);
-              }}
-              title="Close"
-            >
-              ✕
-            </button>
-          </div>
-          <p className="webpodcast-subtitle">Convert webpage to 2-person podcast</p>
+          {!showSettings ? (
+            <>
+              <div className="webpodcast-header">
+                <h2>🎙️ WebPodcast</h2>
+                <div className="webpodcast-header-actions">
+                  <button 
+                    className="webpodcast-settings-icon-btn"
+                    onClick={() => setShowSettings(true)}
+                    title="Voice Settings"
+                  >
+                    ⚙️
+                  </button>
+                  <button 
+                    className="webpodcast-close-btn"
+                    onClick={() => {
+                      // Stop any playback before closing
+                      if (ttsEngine && isPlaying) {
+                        ttsEngine.stop();
+                      }
+                      setIsOpen(false);
+                    }}
+                    title="Close"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+              <p className="webpodcast-subtitle">Convert webpage to 2-person podcast</p>
 
-          {isProcessing && (
-            <div className="webpodcast-processing">
-              <div className="webpodcast-spinner"></div>
-              <p>Processing content...</p>
-              {modelProgress > 0 && (
-                <div className="webpodcast-progress-bar">
-                  <div 
-                    className="webpodcast-progress-fill" 
-                    style={{ width: `${Math.min(100, modelProgress)}%` }}
-                  ></div>
+              {isProcessing && (
+                <div className="webpodcast-processing">
+                  <div className="webpodcast-spinner"></div>
+                  <p>Processing content...</p>
+                  {modelProgress > 0 && (
+                    <div className="webpodcast-progress-bar">
+                      <div 
+                        className="webpodcast-progress-fill" 
+                        style={{ width: `${Math.min(100, modelProgress)}%` }}
+                      ></div>
+                    </div>
+                  )}
+                  <p className="webpodcast-progress-text">
+                    {modelProgress > 0 ? `Loading AI model: ${Math.min(100, Math.round(modelProgress))}%` : 'Extracting content...'}
+                  </p>
                 </div>
               )}
-              <p className="webpodcast-progress-text">
-                {modelProgress > 0 ? `Loading AI model: ${Math.min(100, Math.round(modelProgress))}%` : 'Extracting content...'}
-              </p>
-            </div>
-          )}
 
-          {!isProcessing && !isPlaying && (
-            <button className="webpodcast-btn-primary" onClick={handleConvert}>
-              🎬 Start Podcast
-            </button>
-          )}
+              {!isProcessing && !isPlaying && (
+                <button className="webpodcast-btn-primary" onClick={handleConvert}>
+                  🎬 Start Podcast
+                </button>
+              )}
 
-          {isPlaying && (
-            <div className="webpodcast-playing">
-              {/* Chat container */}
-              <div className="webpodcast-chat-container" ref={scrollContainerRef}>
-                <MessageList 
-                  messages={messages}
-                  activeMessageId={activeMessageId}
-                  scrollContainerRef={scrollContainerRef}
-                />
-              </div>
+              {isPlaying && (
+                <div className="webpodcast-playing">
+                  {/* Chat container */}
+                  <div className="webpodcast-chat-container" ref={scrollContainerRef}>
+                    <MessageList 
+                      messages={messages}
+                      activeMessageId={activeMessageId}
+                      scrollContainerRef={scrollContainerRef}
+                    />
+                  </div>
 
-              <div className="webpodcast-controls">
-                <button className="webpodcast-btn-stop" onClick={handleStop}>
-                  ⏹️ Stop
+                  <div className="webpodcast-controls">
+                    <button className="webpodcast-btn-stop" onClick={handleStop}>
+                      ⏹️ Stop
+                    </button>
+                  </div>
+                  <div className="webpodcast-progress-info">
+                    <p>Playing: {progress.current} / {progress.total} segments</p>
+                    <div className="webpodcast-progress-bar">
+                      <div 
+                        className="webpodcast-progress-fill" 
+                        style={{ width: `${(progress.current / progress.total) * 100}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="webpodcast-header">
+                <h2>⚙️ Voice Settings</h2>
+                <button 
+                  className="webpodcast-close-btn"
+                  onClick={() => setShowSettings(false)}
+                  title="Back"
+                >
+                  ✕
                 </button>
               </div>
-              <div className="webpodcast-progress-info">
-                <p>Playing: {progress.current} / {progress.total} segments</p>
-                <div className="webpodcast-progress-bar">
-                  <div 
-                    className="webpodcast-progress-fill" 
-                    style={{ width: `${(progress.current / progress.total) * 100}%` }}
-                  ></div>
+              <p className="webpodcast-subtitle">Configure your podcast voices</p>
+
+              <div className="webpodcast-settings">
+                <div className="webpodcast-setting-toggle">
+                  <label>Night Mode</label>
+                  <div
+                    className={`webpodcast-toggle-switch ${settings.theme === 'dark' ? 'active' : ''}`}
+                    onClick={async () => {
+                      const newTheme = settings.theme === 'dark' ? 'light' : 'dark';
+                      const newSettings = { ...settings, theme: newTheme };
+                      setSettings(newSettings);
+                      // Save theme immediately for instant feedback
+                      await saveSettings(newSettings);
+                      // Update container theme
+                      if (containerRef.current) {
+                        containerRef.current.setAttribute('data-theme', newTheme);
+                      }
+                    }}
+                  />
+                </div>
+                <div className="webpodcast-setting-item">
+                  <label>Voice 1 (Host):</label>
+                  <select
+                    value={settings.accent1}
+                    onChange={(e) => setSettings({ ...settings, accent1: e.target.value })}
+                  >
+                    <option value="en-US">American English</option>
+                    <option value="en-GB">British English</option>
+                    <option value="en-IN">Indian English</option>
+                    <option value="en-AU">Australian English</option>
+                    <option value="en-CA">Canadian English</option>
+                  </select>
+                </div>
+                <div className="webpodcast-setting-item">
+                  <label>Voice 2 (Guest):</label>
+                  <select
+                    value={settings.accent2}
+                    onChange={(e) => setSettings({ ...settings, accent2: e.target.value })}
+                  >
+                    <option value="en-US">American English</option>
+                    <option value="en-GB">British English</option>
+                    <option value="en-IN">Indian English</option>
+                    <option value="en-AU">Australian English</option>
+                    <option value="en-CA">Canadian English</option>
+                  </select>
+                </div>
+                <div className="webpodcast-setting-item">
+                  <label>Speed: {settings.speed}x</label>
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="2.0"
+                    step="0.1"
+                    value={settings.speed}
+                    onChange={(e) => setSettings({ ...settings, speed: parseFloat(e.target.value) })}
+                  />
                 </div>
               </div>
-            </div>
+
+              <div className="webpodcast-footer">
+                <button 
+                  className="webpodcast-btn-primary" 
+                  onClick={async () => {
+                    await saveSettings(settings);
+                    if (ttsEngine) {
+                      ttsEngine.setSettings(settings);
+                    }
+                    setSaved(true);
+                    setTimeout(() => {
+                      setSaved(false);
+                      setShowSettings(false);
+                    }, 1000);
+                  }}
+                >
+                  {saved ? '✓ Saved!' : 'Save Settings'}
+                </button>
+              </div>
+            </>
           )}
-
-          <div className="webpodcast-settings">
-            <div className="webpodcast-setting-item">
-              <label>Speed: {settings.speed}x</label>
-              <input
-                type="range"
-                min="0.5"
-                max="2.0"
-                step="0.1"
-                value={settings.speed}
-                onChange={(e) => handleSpeedChange(parseFloat(e.target.value))}
-              />
-            </div>
-          </div>
-
-          <div className="webpodcast-footer">
-            <button 
-              className="webpodcast-btn-settings" 
-              onClick={() => chrome.runtime.openOptionsPage()}
-            >
-              ⚙️ Voice Settings
-            </button>
-          </div>
         </div>
       )}
     </>

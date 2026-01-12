@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import './App.css';
 // Note: These imports will work after build
@@ -18,17 +18,37 @@ function App() {
     accent2: 'en-IN'
   });
   const [ttsEngine, setTtsEngine] = useState(null);
+  const engineRef = useRef(null);
 
   useEffect(() => {
     // Initialize TTS engine
     const engine = new TTSEngine();
+    engineRef.current = engine;
     setTtsEngine(engine);
 
     // Load settings
-    getSettings().then(savedSettings => {
+    const loadSettings = async () => {
+      const savedSettings = await getSettings();
       setSettings(savedSettings);
-      engine.setSettings(savedSettings);
-    });
+      if (engineRef.current) {
+        engineRef.current.setSettings(savedSettings);
+      }
+    };
+    loadSettings();
+
+    // Listen for settings changes (e.g., from options page)
+    const handleStorageChange = (changes, areaName) => {
+      if (areaName === 'sync' && changes) {
+        // Check if any settings keys changed
+        const settingKeys = ['accent1', 'accent2', 'speed', 'voice1', 'voice2'];
+        const hasSettingChanges = Object.keys(changes).some(key => settingKeys.includes(key));
+        
+        if (hasSettingChanges) {
+          loadSettings();
+        }
+      }
+    };
+    chrome.storage.onChanged.addListener(handleStorageChange);
 
     // Listen for model loading progress
     chrome.runtime.onMessage.addListener((message) => {
@@ -40,8 +60,9 @@ function App() {
     });
 
     return () => {
-      if (engine) {
-        engine.stop();
+      chrome.storage.onChanged.removeListener(handleStorageChange);
+      if (engineRef.current) {
+        engineRef.current.stop();
       }
     };
   }, []);
@@ -161,28 +182,6 @@ function App() {
         </div>
       )}
 
-      <div className="settings">
-        <div className="setting-item">
-          <label>Speed: {settings.speed}x</label>
-          <input
-            type="range"
-            min="0.5"
-            max="2.0"
-            step="0.1"
-            value={settings.speed}
-            onChange={(e) => handleSpeedChange(parseFloat(e.target.value))}
-          />
-        </div>
-      </div>
-
-      <div className="footer">
-        <button 
-          className="btn-settings" 
-          onClick={() => chrome.runtime.openOptionsPage()}
-        >
-          ⚙️ Voice Settings
-        </button>
-      </div>
     </div>
   );
 }

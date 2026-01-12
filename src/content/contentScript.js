@@ -45,13 +45,12 @@ function extractFallbackContent() {
   // Try common content selectors
   const selectors = [
     'article',
-    'main',
-    '[role="main"]',
-    '.content',
+    '[role="article"]',
     '.post',
-    '.entry-content',
-    '#content',
-    '#main-content',
+    '.entry',
+    '.content',
+    'main',
+    '.main-content',
   ];
 
   for (const selector of selectors) {
@@ -64,7 +63,7 @@ function extractFallbackContent() {
     }
   }
 
-  // Last resort: get body text
+  // Last resort: use body text
   return {
     title: document.title,
     text: document.body.innerText || document.body.textContent || '',
@@ -73,7 +72,7 @@ function extractFallbackContent() {
 
 // Listen for messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === 'extractContent') {
+  if (request.type === 'extract-content') {
     extractPageContent()
       .then((content) => {
         sendResponse({ success: true, content });
@@ -94,6 +93,49 @@ function injectWidgetStyles() {
   style.textContent = `
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     
+    /* CSS Variables for Theming */
+    #webpodcast-widget-container {
+      --wp-bg-primary: #ffffff;
+      --wp-bg-secondary: #f8fafc;
+      --wp-bg-tertiary: #f1f5f9;
+      --wp-text-primary: #1e293b;
+      --wp-text-secondary: #64748b;
+      --wp-text-tertiary: #94a3b8;
+      --wp-border: #e2e8f0;
+      --wp-border-hover: #cbd5e1;
+      --wp-accent: #4f46e5;
+      --wp-accent-hover: #4338ca;
+      --wp-accent-light: #eef2ff;
+      --wp-success: #10b981;
+      --wp-danger: #ef4444;
+      --wp-danger-hover: #dc2626;
+      --wp-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --wp-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --wp-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      --wp-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+    
+    #webpodcast-widget-container[data-theme="dark"] {
+      --wp-bg-primary: #1e293b;
+      --wp-bg-secondary: #0f172a;
+      --wp-bg-tertiary: #1e293b;
+      --wp-text-primary: #f1f5f9;
+      --wp-text-secondary: #cbd5e1;
+      --wp-text-tertiary: #94a3b8;
+      --wp-border: #334155;
+      --wp-border-hover: #475569;
+      --wp-accent: #6366f1;
+      --wp-accent-hover: #818cf8;
+      --wp-accent-light: #312e81;
+      --wp-success: #22c55e;
+      --wp-danger: #f87171;
+      --wp-danger-hover: #ef4444;
+      --wp-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+      --wp-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+      --wp-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+      --wp-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+    }
+    
     #webpodcast-widget-container {
       position: fixed;
       bottom: 20px;
@@ -102,259 +144,484 @@ function injectWidgetStyles() {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
       pointer-events: none;
     }
+    
     .webpodcast-toggle-btn {
-      width: 56px;
-      height: 56px;
+      width: 60px;
+      height: 60px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
       border: none;
       color: white;
       font-size: 28px;
       cursor: pointer;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-      transition: all 0.3s;
+      box-shadow: var(--wp-shadow-lg);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       pointer-events: all;
       display: flex;
       align-items: center;
       justify-content: center;
     }
+    
     .webpodcast-toggle-btn:hover {
-      transform: scale(1.1);
-      box-shadow: 0 6px 25px rgba(102, 126, 234, 0.5);
+      transform: translateY(-2px) scale(1.05);
+      box-shadow: var(--wp-shadow-xl);
+      background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
     }
+    
     .webpodcast-widget {
       position: absolute;
-      bottom: 70px;
+      bottom: 80px;
       right: 0;
-      width: 320px;
-      padding: 20px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border-radius: 16px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      width: 360px;
+      padding: 24px;
+      background: var(--wp-bg-primary);
+      color: var(--wp-text-primary);
+      border-radius: 20px;
+      border: 1px solid var(--wp-border);
+      box-shadow: var(--wp-shadow-xl);
       pointer-events: all;
-      animation: slideUp 0.3s ease-out;
-      max-height: calc(100vh - 100px);
+      animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      max-height: calc(100vh - 120px);
       overflow-y: auto;
+      overflow-x: hidden;
     }
+    
+    .webpodcast-widget::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    .webpodcast-widget::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    .webpodcast-widget::-webkit-scrollbar-thumb {
+      background: var(--wp-border);
+      border-radius: 4px;
+    }
+    
+    .webpodcast-widget::-webkit-scrollbar-thumb:hover {
+      background: var(--wp-border-hover);
+    }
+    
     @keyframes slideUp {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
+    
     .webpodcast-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 8px;
+      margin-bottom: 12px;
     }
+    
     .webpodcast-header h2 {
-      font-size: 22px;
+      font-size: 20px;
       margin: 0;
-      font-weight: 700;
+      font-weight: 600;
+      color: var(--wp-text-primary);
+      letter-spacing: -0.02em;
     }
-    .webpodcast-close-btn {
-      background: rgba(255, 255, 255, 0.2);
+    
+    .webpodcast-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .webpodcast-settings-icon-btn {
+      background: transparent;
       border: none;
-      color: white;
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
+      color: var(--wp-text-secondary);
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
       cursor: pointer;
       font-size: 18px;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.2s;
+      transition: all 0.2s ease;
       padding: 0;
+      line-height: 1;
     }
+    
+    .webpodcast-settings-icon-btn:hover {
+      background: var(--wp-bg-tertiary);
+      color: var(--wp-text-primary);
+    }
+    
+    .webpodcast-close-btn {
+      background: var(--wp-bg-tertiary);
+      border: 1px solid var(--wp-border);
+      color: var(--wp-text-secondary);
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      padding: 0;
+      line-height: 1;
+    }
+    
     .webpodcast-close-btn:hover {
-      background: rgba(255, 255, 255, 0.3);
+      background: var(--wp-bg-secondary);
+      border-color: var(--wp-border-hover);
+      color: var(--wp-text-primary);
     }
+    
     .webpodcast-subtitle {
-      font-size: 12px;
-      opacity: 0.95;
-      margin: 0 0 20px 0;
+      font-size: 13px;
+      color: var(--wp-text-secondary);
+      margin: 0 0 24px 0;
+      font-weight: 400;
     }
+    
     .webpodcast-btn-primary {
       width: 100%;
       padding: 14px 20px;
       font-size: 15px;
-      font-weight: 600;
-      background: white;
-      color: #667eea;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: all 0.3s;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      margin-bottom: 16px;
-    }
-    .webpodcast-btn-primary:hover {
-      transform: translateY(-2px);
-      background: #f8f9fa;
-    }
-    .webpodcast-btn-stop {
-      width: 100%;
-      padding: 14px 20px;
-      font-size: 15px;
-      font-weight: 600;
-      background: #ff4757;
+      font-weight: 500;
+      background: var(--wp-accent);
       color: white;
       border: none;
       border-radius: 10px;
       cursor: pointer;
-      transition: all 0.3s;
-      box-shadow: 0 4px 12px rgba(255, 71, 87, 0.3);
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
+      margin-bottom: 16px;
+      letter-spacing: -0.01em;
     }
+    
+    .webpodcast-btn-primary:hover {
+      background: var(--wp-accent-hover);
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+      transform: translateY(-1px);
+    }
+    
+    .webpodcast-btn-primary:active {
+      transform: translateY(0);
+      box-shadow: 0 1px 4px rgba(79, 70, 229, 0.25);
+    }
+    
+    .webpodcast-btn-stop {
+      width: 100%;
+      padding: 14px 20px;
+      font-size: 15px;
+      font-weight: 500;
+      background: var(--wp-danger);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: var(--wp-shadow-sm);
+      letter-spacing: -0.01em;
+    }
+    
     .webpodcast-btn-stop:hover {
-      transform: translateY(-2px);
-      background: #ff3838;
+      transform: translateY(-1px);
+      background: var(--wp-danger-hover);
+      box-shadow: var(--wp-shadow-md);
     }
+    
+    .webpodcast-btn-stop:active {
+      transform: translateY(0);
+    }
+    
     .webpodcast-processing {
       text-align: center;
-      padding: 20px 0;
+      padding: 32px 0;
     }
+    
     .webpodcast-spinner {
-      width: 36px;
-      height: 36px;
-      border: 3px solid rgba(255, 255, 255, 0.3);
-      border-top-color: white;
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--wp-border);
+      border-top-color: var(--wp-accent);
       border-radius: 50%;
       animation: spin 1s linear infinite;
       margin: 0 auto 16px;
     }
+    
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+    
     .webpodcast-progress-bar {
       width: 100%;
-      height: 8px;
-      background: rgba(255, 255, 255, 0.25);
+      height: 6px;
+      background: var(--wp-bg-tertiary);
       border-radius: 10px;
       overflow: hidden;
-      margin: 10px 0;
+      margin: 12px 0;
     }
+    
     .webpodcast-progress-fill {
       height: 100%;
-      background: white;
-      transition: width 0.4s;
+      background: linear-gradient(90deg, var(--wp-accent) 0%, #7c3aed 100%);
+      transition: width 0.4s ease;
       border-radius: 10px;
     }
+    
     .webpodcast-progress-text {
-      font-size: 11px;
+      font-size: 12px;
       margin-top: 8px;
-      opacity: 0.9;
+      color: var(--wp-text-secondary);
+      font-weight: 400;
     }
+    
     .webpodcast-controls {
       margin-bottom: 16px;
     }
+    
     .webpodcast-progress-info {
       text-align: center;
-      background: rgba(255, 255, 255, 0.1);
-      padding: 12px;
-      border-radius: 10px;
+      background: var(--wp-bg-secondary);
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--wp-border);
     }
+    
     .webpodcast-progress-info p {
       font-size: 13px;
       margin-bottom: 10px;
       font-weight: 500;
+      color: var(--wp-text-primary);
     }
+    
     .webpodcast-settings {
-      margin-top: 20px;
-      padding-top: 16px;
-      border-top: 1px solid rgba(255, 255, 255, 0.25);
+      margin-top: 0;
     }
+    
     .webpodcast-setting-item {
-      margin-bottom: 16px;
+      margin-bottom: 20px;
     }
+    
+    .webpodcast-setting-item:last-child {
+      margin-bottom: 0;
+    }
+    
     .webpodcast-setting-item label {
       display: block;
       font-size: 13px;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
       font-weight: 500;
+      color: var(--wp-text-primary);
+      letter-spacing: -0.01em;
     }
+    
     .webpodcast-setting-item input[type="range"] {
       width: 100%;
       height: 6px;
-      background: rgba(255, 255, 255, 0.25);
+      background: var(--wp-bg-tertiary);
       border-radius: 10px;
       outline: none;
       -webkit-appearance: none;
       cursor: pointer;
     }
+    
+    #webpodcast-widget-container[data-theme="dark"] .webpodcast-setting-item input[type="range"] {
+      background: #475569;
+    }
+    
     .webpodcast-setting-item input[type="range"]::-webkit-slider-thumb {
       -webkit-appearance: none;
-      width: 18px;
-      height: 18px;
-      background: white;
+      width: 20px;
+      height: 20px;
+      background: var(--wp-accent);
       border-radius: 50%;
       cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+      box-shadow: var(--wp-shadow-sm);
+      transition: all 0.2s ease;
     }
-    .webpodcast-footer {
-      margin-top: 16px;
-      text-align: center;
-      padding-top: 12px;
-      border-top: 1px solid rgba(255, 255, 255, 0.3);
+    
+    #webpodcast-widget-container[data-theme="dark"] .webpodcast-setting-item input[type="range"]::-webkit-slider-thumb {
+      background: #818cf8;
+      box-shadow: 0 2px 8px rgba(129, 140, 248, 0.4);
     }
-    .webpodcast-btn-settings {
-      background: rgba(255, 255, 255, 0.2);
-      color: white;
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      padding: 8px 16px;
-      border-radius: 6px;
-      font-size: 13px;
+    
+    .webpodcast-setting-item input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.1);
+      box-shadow: var(--wp-shadow-md);
+    }
+    
+    .webpodcast-setting-item select {
+      width: 100%;
+      padding: 12px 14px;
+      font-size: 14px;
+      background: var(--wp-bg-primary);
+      border: 1px solid var(--wp-border);
+      border-radius: 10px;
+      color: var(--wp-text-primary);
       cursor: pointer;
-      transition: all 0.2s;
+      outline: none;
+      transition: all 0.2s ease;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 40px;
+      font-weight: 400;
+    }
+    
+    #webpodcast-widget-container[data-theme="dark"] .webpodcast-setting-item select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23cbd5e1' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    }
+    
+    .webpodcast-setting-item select:hover {
+      border-color: var(--wp-border-hover);
+    }
+    
+    .webpodcast-setting-item select:focus {
+      border-color: var(--wp-accent);
+      box-shadow: 0 0 0 3px var(--wp-accent-light);
+    }
+    
+    .webpodcast-setting-item select option {
+      background: var(--wp-bg-primary);
+      color: var(--wp-text-primary);
+      padding: 8px;
+    }
+    
+    .webpodcast-setting-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--wp-border);
+      margin-bottom: 20px;
+    }
+    
+    .webpodcast-setting-toggle:last-of-type {
+      border-bottom: none;
+      margin-bottom: 0;
+    }
+    
+    .webpodcast-setting-toggle label {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--wp-text-primary);
+      margin: 0;
+      cursor: pointer;
+      flex: 1;
+    }
+    
+    .webpodcast-toggle-switch {
+      position: relative;
+      width: 48px;
+      height: 26px;
+      background: var(--wp-border);
+      border-radius: 13px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    
+    .webpodcast-toggle-switch.active {
+      background: var(--wp-accent);
+    }
+    
+    .webpodcast-toggle-switch::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.2s ease;
+      box-shadow: var(--wp-shadow-sm);
+    }
+    
+    .webpodcast-toggle-switch.active::after {
+      transform: translateX(22px);
+    }
+    
+    .webpodcast-footer {
+      margin-top: 24px;
+      text-align: center;
+      padding-top: 20px;
+      border-top: 1px solid var(--wp-border);
+    }
+    
+    .webpodcast-btn-settings {
+      background: var(--wp-bg-secondary);
+      color: var(--wp-text-primary);
+      border: 1px solid var(--wp-border);
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
       width: 100%;
       font-weight: 500;
+      letter-spacing: -0.01em;
     }
+    
     .webpodcast-btn-settings:hover {
-      background: rgba(255, 255, 255, 0.3);
+      background: var(--wp-bg-tertiary);
+      border-color: var(--wp-border-hover);
     }
+    
     .webpodcast-chat-container {
       max-height: 320px;
       min-height: 180px;
       height: 280px;
       overflow-y: auto;
       overflow-x: hidden;
-      padding: 12px;
-      margin: 0 0 12px 0;
-      background: rgba(0, 0, 0, 0.25);
-      border-radius: 12px;
+      padding: 16px;
+      margin: 0 0 16px 0;
+      background: var(--wp-bg-secondary);
+      border-radius: 14px;
       scroll-behavior: smooth;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15);
+      border: 1px solid var(--wp-border);
       display: block;
     }
+    
     .webpodcast-chat-container::-webkit-scrollbar {
       width: 6px;
     }
+    
     .webpodcast-chat-container::-webkit-scrollbar-track {
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 10px;
+      background: transparent;
     }
+    
     .webpodcast-chat-container::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.3);
-      border-radius: 10px;
+      background: var(--wp-border);
+      border-radius: 3px;
     }
+    
     .webpodcast-chat-container::-webkit-scrollbar-thumb:hover {
-      background: rgba(255, 255, 255, 0.4);
+      background: var(--wp-border-hover);
     }
+    
     .webpodcast-messages-empty {
       display: flex;
       align-items: center;
       justify-content: center;
       height: 180px;
-      color: rgba(255, 255, 255, 0.6);
+      color: var(--wp-text-tertiary);
       font-size: 13px;
     }
+    
     .webpodcast-message {
-      margin-bottom: 8px;
+      margin-bottom: 12px;
       animation: messageSlideIn 0.3s ease-out;
       display: flex;
       width: 100%;
     }
+    
     @keyframes messageSlideIn {
       from {
         opacity: 0;
@@ -365,69 +632,65 @@ function injectWidgetStyles() {
         transform: translateY(0);
       }
     }
+    
     .webpodcast-message-speaker1 {
       justify-content: flex-start;
     }
+    
     .webpodcast-message-speaker2 {
       justify-content: flex-end;
     }
+    
     .webpodcast-message-bubble {
       max-width: 75%;
-      padding: 10px 14px;
-      border-radius: 18px;
+      padding: 12px 16px;
+      border-radius: 16px;
       word-wrap: break-word;
       overflow-wrap: break-word;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+      box-shadow: var(--wp-shadow-sm);
       transition: all 0.3s ease;
       position: relative;
       white-space: pre-wrap;
     }
+    
     .webpodcast-message-speaker1 .webpodcast-message-bubble {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
       color: white;
       border-bottom-left-radius: 4px;
-      border-top-right-radius: 18px;
-      border-top-left-radius: 18px;
     }
+    
     .webpodcast-message-speaker2 .webpodcast-message-bubble {
-      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
       color: white;
       border-bottom-right-radius: 4px;
-      border-top-right-radius: 18px;
-      border-top-left-radius: 18px;
     }
+    
     .webpodcast-message-active .webpodcast-message-bubble {
       transform: scale(1.02);
-      box-shadow: 0 4px 16px rgba(255, 255, 255, 0.3), 0 2px 8px rgba(0, 0, 0, 0.2);
-      border: 2px solid rgba(255, 255, 255, 0.5);
-      animation: messagePulse 2s ease-in-out infinite;
+      box-shadow: var(--wp-shadow-md);
+      border: 2px solid rgba(255, 255, 255, 0.3);
     }
-    @keyframes messagePulse {
-      0%, 100% {
-        box-shadow: 0 4px 16px rgba(255, 255, 255, 0.3), 0 2px 8px rgba(0, 0, 0, 0.2);
-      }
-      50% {
-        box-shadow: 0 4px 20px rgba(255, 255, 255, 0.4), 0 2px 12px rgba(0, 0, 0, 0.25);
-      }
-    }
+    
     .webpodcast-message-text {
       font-size: 14px;
-      line-height: 1.5;
+      line-height: 1.6;
       margin: 0;
       color: white;
       font-weight: 400;
       word-break: break-word;
       overflow-wrap: anywhere;
       letter-spacing: 0.01em;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
     }
+    
     .webpodcast-playing {
       margin: 16px 0;
     }
+    
     .webpodcast-playing .webpodcast-controls {
       margin-top: 0;
-      margin-bottom: 12px;
+      margin-bottom: 16px;
     }
+    
     .webpodcast-playing .webpodcast-progress-info {
       margin-top: 0;
     }

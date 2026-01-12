@@ -12,6 +12,7 @@ export async function getSettings() {
         speed: 1.0,
         accent1: 'en-US',
         accent2: 'en-IN',
+        theme: 'dark',
       },
       (settings) => {
         resolve(settings);
