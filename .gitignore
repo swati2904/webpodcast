@@ -5,3 +5,10 @@ dist/
 .env
 .env.local
 .vite/
+
+# Documentation files (internal guides)
+DEPLOYMENT_GUIDE.md
+PRIVACY_POLICY.md
+PUBLISHING_GUIDE.md
+QUICK_START.md
+CHROME_STORE_CHECKLIST.md

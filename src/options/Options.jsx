@@ -34,7 +34,7 @@ function Options() {
   return (
     <div className="options">
       <div className="header">
-        <h1>🎙️ WebPodcast Settings</h1>
+        <h1>🎙️ WebPodify Settings</h1>
         <p>Configure your podcast voices (one-time setup)</p>
       </div>
 

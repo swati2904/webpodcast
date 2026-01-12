@@ -1,4 +1,4 @@
-# 🎙️ WebPodcast - Chrome Extension
+# 🎙️ WebPodify - Chrome Extension
 
 <div align="center">
 
@@ -17,7 +17,7 @@
 
 ## ✨ Features
 
-- 🤖 **AI-Powered Dialogue**: Uses T5-small model to convert articles into natural conversations
+- 🤖 **AI-Powered Dialogue**: Uses T5-small model to convert web content into natural conversations
 - 🎙️ **Two-Voice Narration**: Two distinct voices for engaging podcast-style experience
 - ⚡ **100% Client-Side**: No server calls, all processing happens in your browser
 - 🎚️ **Speed Control**: Adjust playback speed (0.5x - 2.0x)
@@ -174,7 +174,7 @@ T5-small (Text-to-Text Transfer Transformer)
 ├── Parameters: 60M
 ├── Quantization: 8-bit (for size reduction)
 ├── Task: Text-to-Text Generation
-└── Use Case: Convert articles → Dialogue format
+└── Use Case: Convert web content → Dialogue format
 ```
 
 ---
@@ -244,7 +244,7 @@ webpodcast/
    - Select the `dist` folder
 
 5. **First Use**
-   - Click extension icon on any article page
+   - Click extension icon on any webpage
    - Click "Start Podcast"
    - Wait for AI model download (~150-200MB, one-time)
    - Enjoy your podcast!
@@ -266,12 +266,49 @@ npm run preview
 
 ---
 
+## 🌐 Website Deployment
+
+The landing page is deployed on Vercel. To deploy updates:
+
+### Prerequisites
+- Vercel CLI installed: `npm install -g vercel`
+- Logged in to Vercel: `vercel login` (first time only)
+
+### Deploy Website
+
+```bash
+# Deploy to production
+npm run website:deploy
+```
+
+This will:
+1. Navigate to the `website` folder
+2. Deploy all files to Vercel production
+3. Provide you with the live URL
+
+### Local Website Development
+
+```bash
+# Run local server for website
+npm run website:dev
+```
+
+Opens at `http://localhost:3000`
+
+### Website Files
+- Landing page: `website/index.html`
+- Privacy policy: `website/privacy-policy.html`
+- Styles: `website/styles.css`
+- Config: `website/vercel.json`
+
+---
+
 ## 🎯 How It Works
 
 ### Step-by-Step Process
 
 1. **📄 Text Extraction**
-   - Content script extracts main article text
+   - Content script extracts main content from webpage
    - Uses Readability.js to filter out ads/navigation
    - Returns clean, readable content
 

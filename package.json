@@ -1,12 +1,14 @@
 {
-  "name": "webpodcast",
+  "name": "webpodify",
   "version": "1.0.0",
   "description": "Convert any webpage to a 2-person podcast-style conversation",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "website:dev": "cd website && npm run dev",
+    "website:deploy": "cd website && vercel --prod --yes"
   },
   "dependencies": {
     "react": "^18.2.0",

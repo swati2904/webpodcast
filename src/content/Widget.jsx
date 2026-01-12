@@ -244,7 +244,7 @@ function Widget() {
       <button 
         className="webpodcast-toggle-btn" 
         onClick={() => setIsOpen(!isOpen)}
-        title="WebPodcast"
+        title="WebPodify"
       >
         🎙️
       </button>
@@ -255,7 +255,7 @@ function Widget() {
           {!showSettings ? (
             <>
               <div className="webpodcast-header">
-                <h2>🎙️ WebPodcast</h2>
+                <h2>🎙️ WebPodify</h2>
                 <div className="webpodcast-header-actions">
                   <button 
                     className="webpodcast-settings-icon-btn"

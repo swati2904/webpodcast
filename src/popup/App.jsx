@@ -135,7 +135,7 @@ function App() {
   return (
     <div className="app">
       <div className="header">
-        <h1>🎙️ WebPodcast</h1>
+        <h1>🎙️ WebPodify</h1>
         <p className="subtitle">Convert webpage to 2-person podcast</p>
       </div>
 
