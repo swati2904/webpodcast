@@ -407,8 +407,6 @@ MIT License - see [LICENSE](LICENSE) file for details
 
 <div align="center">
 
-**Made with ❤️ using AI**
-
 [⭐ Star this repo](https://github.com/swati2904/webpodcast) • [🐛 Report Bug](https://github.com/swati2904/webpodcast/issues) • [💡 Request Feature](https://github.com/swati2904/webpodcast/issues)
 
 </div>
