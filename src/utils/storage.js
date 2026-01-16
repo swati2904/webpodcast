@@ -13,6 +13,7 @@ export async function getSettings() {
         accent1: 'en-US',
         accent2: 'en-IN',
         theme: 'dark',
+        widgetEnabled: true,
       },
       (settings) => {
         resolve(settings);

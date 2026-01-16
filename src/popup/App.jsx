@@ -12,10 +12,12 @@ function App() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [modelProgress, setModelProgress] = useState(0);
+  const [featureEnabled, setFeatureEnabled] = useState(true);
   const [settings, setSettings] = useState({
     speed: 1.0,
     accent1: 'en-US',
-    accent2: 'en-IN'
+    accent2: 'en-IN',
+    widgetEnabled: true
   });
   const [ttsEngine, setTtsEngine] = useState(null);
   const engineRef = useRef(null);
@@ -30,6 +32,7 @@ function App() {
     const loadSettings = async () => {
       const savedSettings = await getSettings();
       setSettings(savedSettings);
+      setFeatureEnabled(savedSettings.widgetEnabled ?? true);
       if (engineRef.current) {
         engineRef.current.setSettings(savedSettings);
       }
@@ -40,11 +43,14 @@ function App() {
     const handleStorageChange = (changes, areaName) => {
       if (areaName === 'sync' && changes) {
         // Check if any settings keys changed
-        const settingKeys = ['accent1', 'accent2', 'speed', 'voice1', 'voice2'];
+        const settingKeys = ['accent1', 'accent2', 'speed', 'voice1', 'voice2', 'widgetEnabled'];
         const hasSettingChanges = Object.keys(changes).some(key => settingKeys.includes(key));
         
         if (hasSettingChanges) {
           loadSettings();
+          if (changes.widgetEnabled) {
+            setFeatureEnabled(changes.widgetEnabled.newValue ?? true);
+          }
         }
       }
     };
@@ -132,11 +138,48 @@ function App() {
     }
   };
 
+  const handleToggle = () => {
+    setFeatureEnabled((prev) => {
+      const next = !prev;
+      const updatedSettings = { ...settings, widgetEnabled: next };
+      setSettings(updatedSettings);
+      saveSettings(updatedSettings);
+      // Notify active tab to update widget state
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        const [tab] = tabs || [];
+        if (tab?.id) {
+          chrome.tabs.sendMessage(tab.id, { type: 'toggle-widget', enabled: next }).catch(() => {});
+        }
+      });
+      return next;
+    });
+  };
+
   return (
     <div className="app">
       <div className="header">
         <h1>🎙️ WebPodify</h1>
         <p className="subtitle">Convert webpage to 2-person podcast</p>
+      </div>
+
+      <div className="toggle-row">
+        <div>
+          <p className="toggle-title">Website widget</p>
+          <p className="toggle-subtitle">Show the floating WebPodify controls on pages</p>
+        </div>
+        <div className="toggle-right">
+          <span className={`toggle-status ${featureEnabled ? 'on' : 'off'}`}>
+            {featureEnabled ? 'On' : 'Off'}
+          </span>
+          <button
+            type="button"
+            className={`toggle-switch ${featureEnabled ? 'active' : ''}`}
+            aria-pressed={featureEnabled}
+            onClick={handleToggle}
+          >
+            <span className="toggle-knob" />
+          </button>
+        </div>
       </div>
 
       {isProcessing && (
@@ -155,12 +198,6 @@ function App() {
             {modelProgress > 0 ? `Loading AI model: ${Math.min(100, Math.round(modelProgress))}%` : 'Extracting content...'}
           </p>
         </div>
-      )}
-
-      {!isProcessing && !isPlaying && (
-        <button className="btn-primary" onClick={handleConvert}>
-          🎬 Start Podcast
-        </button>
       )}
 
       {isPlaying && (
@@ -182,6 +219,9 @@ function App() {
         </div>
       )}
 
+      <div className="footer">
+        <span className="brand-tag">webpodify</span>
+      </div>
     </div>
   );
 }

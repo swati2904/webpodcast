@@ -84,6 +84,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
+let widgetRoot = null;
+
 // Inject widget CSS styles
 function injectWidgetStyles() {
   if (document.getElementById('webpodcast-widget-styles')) return;
@@ -714,13 +716,55 @@ function initWidget() {
   document.body.appendChild(container);
 
   // Mount React app
-  const root = createRoot(container);
-  root.render(React.createElement(Widget));
+  widgetRoot = createRoot(container);
+  widgetRoot.render(React.createElement(Widget));
+}
+
+function removeWidget() {
+  if (widgetRoot) {
+    widgetRoot.unmount();
+    widgetRoot = null;
+  }
+  const container = document.getElementById('webpodcast-widget-container');
+  if (container && container.parentNode) {
+    container.parentNode.removeChild(container);
+  }
+  const style = document.getElementById('webpodcast-widget-styles');
+  if (style && style.parentNode) {
+    style.parentNode.removeChild(style);
+  }
+}
+
+function ensureWidgetEnabled(enabled) {
+  if (enabled) {
+    initWidget();
+    return;
+  }
+  removeWidget();
 }
 
 // Initialize widget when DOM is ready
+const startWithSetting = () => {
+  chrome.storage.sync.get({ widgetEnabled: true }, (result) => {
+    ensureWidgetEnabled(result.widgetEnabled ?? true);
+  });
+};
+
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initWidget);
+  document.addEventListener('DOMContentLoaded', startWithSetting);
 } else {
-  initWidget();
+  startWithSetting();
 }
+
+// Listen for popup toggle or storage changes
+chrome.runtime.onMessage.addListener((message) => {
+  if (message.type === 'toggle-widget') {
+    ensureWidgetEnabled(message.enabled ?? true);
+  }
+});
+
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName === 'sync' && changes.widgetEnabled) {
+    ensureWidgetEnabled(changes.widgetEnabled.newValue ?? true);
+  }
+});
