@@ -65,39 +65,25 @@ export async function initializeModel() {
  */
 export async function convertToDialogue(articleText, title) {
   try {
-    // Initialize model if needed
-    await initializeModel();
+    // Request dialogue generation from background (which uses offscreen)
+    const response = await chrome.runtime.sendMessage({
+      type: 'generate-dialogue-request',
+      data: { text: articleText, title }
+    });
 
-    // Split article into chunks (T5-small has token limits)
-    const chunks = splitIntoChunks(articleText, 500); // ~500 words per chunk
-
-    const dialogueSegments = [];
-
-    // Process each chunk
-    for (let i = 0; i < chunks.length; i++) {
-      const chunk = chunks[i];
-
-      // Create prompt for dialogue conversion
-      const prompt = createDialoguePrompt(chunk, i === 0, title);
-
-      // Generate dialogue using T5-small
-      const result = await generator(prompt, {
-        max_new_tokens: 300,
-        temperature: 0.7,
-        do_sample: true,
-        top_p: 0.9,
-      });
-
-      // Parse AI output
-      const aiDialogue = parseAIDialogue(result[0].generated_text);
-
-      // Enhance with rule-based post-processing
-      const enhancedDialogue = enhanceDialogue(aiDialogue, i, chunks.length);
-
-      dialogueSegments.push(...enhancedDialogue);
+    if (!response || !response.success) {
+      throw new Error(response?.error || 'Failed to generate dialogue via offscreen');
     }
 
-    return dialogueSegments;
+    const generatedText = response.data;
+    
+    // Parse the generated text into segments
+    const aiDialogue = parseAIDialogue(generatedText);
+
+    // Enhance with rule-based post-processing
+    const enhancedDialogue = enhanceDialogue(aiDialogue, 0, 1);
+
+    return enhancedDialogue;
   } catch (error) {
     console.error('Error converting to dialogue:', error);
     // Fallback to rule-based conversion
@@ -142,9 +128,9 @@ function parseAIDialogue(text) {
 
     // Detect speaker changes with various patterns
     const hostPattern =
-      /^(Host|Speaker 1|Person A|Interviewer|Question|Q)[:：\s-]/i;
+      /^(Alex|Host|Speaker 1|Person A|Interviewer|Question|Q)[:：\s-]/i;
     const expertPattern =
-      /^(Expert|Speaker 2|Person B|Interviewee|Answer|A)[:：\s-]/i;
+      /^(Sam|Expert|Speaker 2|Person B|Interviewee|Answer|A)[:：\s-]/i;
 
     if (hostPattern.test(trimmed)) {
       if (currentText) {
@@ -158,6 +144,16 @@ function parseAIDialogue(text) {
       }
       currentSpeaker = 'speaker2';
       currentText = trimmed.replace(expertPattern, '').trim();
+    } else if (trimmed.includes(':')) {
+      // Handle cases where AI might use other names but with a colon
+      const parts = trimmed.split(':');
+      const name = parts[0].trim().toLowerCase();
+      if (currentText) {
+        segments.push({ speaker: currentSpeaker, text: currentText.trim() });
+      }
+      // Alternate based on previous speaker if name is unknown
+      currentSpeaker = currentSpeaker === 'speaker1' ? 'speaker2' : 'speaker1';
+      currentText = parts.slice(1).join(':').trim();
     } else {
       // Continue current speaker's text
       currentText += (currentText ? ' ' : '') + trimmed;

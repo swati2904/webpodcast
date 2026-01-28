@@ -146,7 +146,7 @@ export class TTSEngine {
           onSegmentStart(i, segment);
         }
 
-        await this.speak(segment.text, voice, this.settings.speed);
+        await this.speak(segment.text, voice, this.settings.speed, segment.speaker);
 
         // Call onSegmentEnd after speaking completes
         if (onSegmentEnd && this.isPlaying) {
@@ -168,47 +168,70 @@ export class TTSEngine {
   /**
    * Speak a single text
    */
-  speak(text, voice, speed = 1.0) {
-    return new Promise((resolve, reject) => {
+  speak(text, voice, speed = 1.0, speaker = 'speaker1') {
+    return new Promise(async (resolve, reject) => {
       // Check if stopped before starting
       if (!this.isPlaying) {
         resolve();
         return;
       }
 
-      // Cancel any current speech
-      this.synthesis.cancel();
+      try {
+        // Try high-quality TTS via offscreen first
+        const response = await chrome.runtime.sendMessage({
+          target: 'offscreen',
+          type: 'generate-tts',
+          data: { text, speaker, speed }
+        });
 
+        if (response && response.success && response.data) {
+          const { audio, sampling_rate } = response.data;
+          await this.playAudioBuffer(audio, sampling_rate);
+          resolve();
+          return;
+        }
+      } catch (error) {
+        console.warn('High-quality TTS failed, falling back to Web Speech API:', error);
+      }
+
+      // Fallback to Web Speech API
+      this.synthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.voice = voice;
       utterance.rate = speed;
-      utterance.pitch = voice && voice.name.includes('Female') ? 1.1 : 0.9; // Slight pitch difference
-      utterance.volume = 1.0;
-
-      // Handle completion
-      utterance.onend = () => {
-        if (this.isPlaying) {
-          resolve();
-        }
-      };
-
-      utterance.onerror = (error) => {
-        // Ignore 'interrupted' errors - they're expected when stopping
-        if (error.error !== 'interrupted') {
-          console.error('Speech error:', error);
-        }
-        // Always resolve - don't reject on errors, especially interruptions
+      utterance.pitch = speaker === 'speaker1' ? 1.1 : 0.9;
+      
+      utterance.onend = () => resolve();
+      utterance.onerror = (e) => {
+        if (e.error !== 'interrupted') console.error('Speech error:', e);
         resolve();
       };
-
-      // Check again before speaking
-      if (!this.isPlaying) {
-        resolve();
-        return;
-      }
 
       this.currentUtterance = utterance;
       this.synthesis.speak(utterance);
+    });
+  }
+
+  /**
+   * Play raw audio buffer
+   */
+  async playAudioBuffer(audioData, samplingRate) {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const float32Array = new Float32Array(audioData);
+    const buffer = audioContext.createBuffer(1, float32Array.length, samplingRate);
+    buffer.getChannelData(0).set(float32Array);
+    
+    const source = audioContext.createBufferSource();
+    source.buffer = buffer;
+    source.connect(audioContext.destination);
+    
+    return new Promise((resolve) => {
+      source.onended = () => {
+        audioContext.close();
+        resolve();
+      };
+      source.start();
+      this.currentAudioSource = source;
     });
   }
 
@@ -245,9 +268,15 @@ export class TTSEngine {
     this.currentIndex = 0;
 
     try {
-      // Cancel all speech immediately (synchronous)
+      // Stop Web Speech API
       this.synthesis.cancel();
       this.currentUtterance = null;
+      
+      // Stop Audio Buffer playback
+      if (this.currentAudioSource) {
+        this.currentAudioSource.stop();
+        this.currentAudioSource = null;
+      }
     } catch (error) {
       // Ignore errors - cancel is best effort
     }

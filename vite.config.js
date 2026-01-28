@@ -23,10 +23,14 @@ export default defineConfig({
         popup: resolve(__dirname, 'src/popup/index.html'),
         options: resolve(__dirname, 'src/options/index.html'),
         background: resolve(__dirname, 'src/background/serviceWorker.js'),
+        offscreen: resolve(__dirname, 'src/background/offscreen.html'),
       },
       output: {
         entryFileNames: (chunkInfo) => {
           if (chunkInfo.name === 'background') {
+            return 'background/[name].js';
+          }
+          if (chunkInfo.name === 'offscreen') {
             return 'background/[name].js';
           }
           return 'assets/[name]-[hash].js';

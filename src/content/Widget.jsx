@@ -320,6 +320,23 @@ function Widget() {
                     <button className="webpodcast-btn-stop" onClick={handleStop}>
                       ⏹️ Stop
                     </button>
+                    <button 
+                      className="webpodcast-btn-download" 
+                      onClick={() => {
+                        // Create a blob from messages and download as text for now
+                        // (Full audio download would require concatenating buffers)
+                        const content = messages.map(m => `${m.speaker === 'speaker1' ? 'Alex' : 'Sam'}: ${m.text}`).join('\n\n');
+                        const blob = new Blob([content], { type: 'text/plain' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'podcast-script.txt';
+                        a.click();
+                      }}
+                      title="Download Script"
+                    >
+                      📥 Script
+                    </button>
                   </div>
                   <div className="webpodcast-progress-info">
                     <p>Playing: {progress.current} / {progress.total} segments</p>
