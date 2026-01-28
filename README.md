@@ -4,12 +4,12 @@
 
 **Convert any webpage into a 2-person podcast-style conversation using AI**
 
-*100% Client-Side • Free • No Server Required*
+*100% Client-Side • Free • No Server Required • Privacy Focused*
 
 [![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-4285F4?logo=google-chrome&logoColor=white)](https://chrome.google.com/webstore)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![React](https://img.shields.io/badge/React-18.2-blue?logo=react)](https://reactjs.org/)
-[![AI](https://img.shields.io/badge/AI-T5--small-orange?logo=tensorflow)](https://huggingface.co/t5-small)
+[![AI](https://img.shields.io/badge/AI-Qwen--2.5--0.5B-orange?logo=huggingface)](https://huggingface.co/Xenova/Qwen2.5-0.5B-Instruct)
 
 </div>
 
@@ -17,12 +17,14 @@
 
 ## ✨ Features
 
-- 🤖 **AI-Powered Dialogue**: Uses T5-small model to convert web content into natural conversations
-- 🎙️ **Two-Voice Narration**: Two distinct voices for engaging podcast-style experience
-- ⚡ **100% Client-Side**: No server calls, all processing happens in your browser
-- 🎚️ **Speed Control**: Adjust playback speed (0.5x - 2.0x)
-- 🎭 **Voice Selection**: Choose different accents (one-time setup)
-- 💾 **Smart Caching**: Models are cached locally after first download
+- 🤖 **Advanced AI Dialogue**: Uses **Qwen2.5-0.5B-Instruct** for natural, engaging, and context-aware conversations.
+- 💬 **In-Page Chat Widget**: Interactive overlay widget with real-time progress and a modern chat-like interface.
+- 🎙️ **Two-Voice Narration**: Seamless switching between two distinct voices for a true podcast experience.
+- ⚡ **Manifest V3 & Offscreen API**: Rock-solid stability using Chrome's Offscreen API for heavy AI processing and background audio.
+- 🛡️ **100% Privacy**: All processing (AI generation & TTS) happens locally in your browser. No data ever leaves your machine.
+- 🌙 **Night Mode**: Beautiful dark and light themes that match your preference.
+- 📥 **Script Export**: Download the generated podcast script for later reading.
+- 🎚️ **Playback Control**: Real-time speed adjustment (0.5x - 2.0x) and pause/resume functionality.
 
 ---
 
@@ -30,28 +32,25 @@
 
 ```mermaid
 graph TB
-    A[User Clicks Extension] --> B[Popup UI Opens]
+    A[User Clicks Widget] --> B[Widget UI Opens]
     B --> C[Content Script Extracts Text]
     C --> D[Readability.js Processes HTML]
-    D --> E[Text Content Extracted]
-    E --> F{T5-small Model Loaded?}
-    F -->|No| G[Download T5-small Model<br/>~150-200MB]
-    G --> H[Cache Model Locally]
-    H --> I[AI Dialogue Conversion]
-    F -->|Yes| I[AI Dialogue Conversion]
-    I --> J[Rule-Based Post-Processing]
-    J --> K[Two-Voice Dialogue Segments]
-    K --> L[Web Speech API TTS]
-    L --> M[Speaker 1 Voice]
-    L --> N[Speaker 2 Voice]
-    M --> O[Audio Playback]
-    N --> O
-    O --> P[User Controls<br/>Play/Pause/Speed]
+    D --> E[Clean Text Content]
+    E --> F{Offscreen Document}
+    F -->|Load| G[Qwen2.5-0.5B Model<br/>~300MB]
+    G --> H[AI Dialogue Generation]
+    H --> I[Dialogue Segments]
+    I --> J{TTS Engine}
+    J -->|Option 1| K[Web Speech API]
+    J -->|Option 2| L[SpeechT5 / Kokoro]
+    K --> M[Two-Voice Audio]
+    L --> M
+    M --> N[Playback & UI Feedback]
     
     style A fill:#667eea,stroke:#764ba2,color:#fff
-    style I fill:#ff6b6b,stroke:#ee5a6f,color:#fff
-    style L fill:#4ecdc4,stroke:#44a08d,color:#fff
-    style O fill:#95e1d3,stroke:#f38181,color:#000
+    style G fill:#ff6b6b,stroke:#ee5a6f,color:#fff
+    style F fill:#4ecdc4,stroke:#44a08d,color:#fff
+    style M fill:#95e1d3,stroke:#f38181,color:#000
 ```
 
 ---
@@ -61,121 +60,55 @@ graph TB
 ```mermaid
 sequenceDiagram
     participant User
-    participant Popup as Popup UI
-    participant Content as Content Script
-    participant AI as T5-small AI
+    participant Widget as React Widget (In-Page)
+    participant Worker as Service Worker
+    participant Offscreen as Offscreen Document (AI)
     participant TTS as TTS Engine
-    participant Browser as Browser Audio
-
-    User->>Popup: Click "Start Podcast"
-    Popup->>Content: Request page content
-    Content->>Content: Extract with Readability.js
-    Content-->>Popup: Return text content
     
-    Popup->>AI: Convert text to dialogue
-    AI->>AI: Load T5-small model (if needed)
-    AI->>AI: Generate dialogue format
-    AI->>AI: Apply rule-based enhancement
-    AI-->>Popup: Return dialogue segments
+    User->>Widget: Click "Start Podcast"
+    Widget->>Widget: Extract page content
+    Widget->>Worker: Request dialogue generation
+    Worker->>Offscreen: Initialize Qwen2.5 model
+    Offscreen-->>Widget: Update loading progress (%)
+    Offscreen->>Offscreen: Generate podcast dialogue
+    Offscreen-->>Widget: Return dialogue segments
     
-    Popup->>TTS: Play dialogue segments
-    loop For each segment
-        TTS->>TTS: Select voice (Speaker 1/2)
-        TTS->>Browser: Synthesize speech
-        Browser-->>User: Play audio
+    loop Playback
+        Widget->>TTS: Play segment
+        TTS->>User: Audio output
+        Widget->>Widget: Update UI (Active message/Auto-scroll)
     end
-    
-    User->>Popup: Control playback
-    Popup->>TTS: Update speed/stop
 ```
 
 ---
 
 ## 🛠️ Tech Stack
 
-### Frontend & UI
-```
-┌─────────────────────────────────────────┐
-│         React 18.2                      │
-│    ┌─────────────────────────────┐     │
-│    │  Popup UI Components         │     │
-│    │  Options Page                │     │
-│    │  State Management            │     │
-│    └─────────────────────────────┘     │
-└─────────────────────────────────────────┘
-```
+### AI & Machine Learning
+- **Transformers.js**: High-performance ML runtime for the browser.
+- **Qwen2.5-0.5B-Instruct**: Latest generation small language model for high-quality dialogue.
+- **SpeechT5**: Neural text-to-speech for natural-sounding voices.
 
-### AI & ML
-```
-┌─────────────────────────────────────────┐
-│    Transformers.js                      │
-│    ┌─────────────────────────────┐      │
-│    │  T5-small Model             │      │
-│    │  • Text-to-Text Generation  │      │
-│    │  • ~150-200MB (quantized)   │      │
-│    │  • Client-side inference    │      │
-│    └─────────────────────────────┘      │
-└─────────────────────────────────────────┘
-```
+### Frontend
+- **React 18**: Powering the modern, responsive in-page widget.
+- **Shadow DOM**: Ensures widget styles don't conflict with the website you're visiting.
+- **Vite**: Ultra-fast build tool and development server.
 
-### Text Processing
-```
-┌─────────────────────────────────────────┐
-│    Readability.js (Mozilla)              │
-│    ┌─────────────────────────────┐      │
-│    │  Content Extraction        │      │
-│    │  • DOM Parsing             │      │
-│    │  • Article Detection       │      │
-│    │  • Noise Removal           │      │
-│    └─────────────────────────────┘      │
-└─────────────────────────────────────────┘
-```
-
-### Text-to-Speech
-```
-┌─────────────────────────────────────────┐
-│    Web Speech API                       │
-│    ┌─────────────────────────────┐      │
-│    │  Speech Synthesis           │      │
-│    │  • Multi-voice support      │      │
-│    │  • Speed control            │      │
-│    │  • Accent selection         │      │
-│    └─────────────────────────────┘      │
-└─────────────────────────────────────────┘
-```
-
-### Build Tools
-```
-┌─────────────────────────────────────────┐
-│    Vite 5.1                             │
-│    ┌─────────────────────────────┐      │
-│    │  • Fast HMR                 │      │
-│    │  • Optimized Bundling       │      │
-│    │  • Chrome Extension Build   │      │
-│    └─────────────────────────────┘      │
-└─────────────────────────────────────────┘
-```
+### Browser Integration
+- **Manifest V3**: Using the latest extension standards.
+- **Offscreen API**: Handles memory-intensive AI tasks and persistent audio playback.
+- **Chrome Storage**: Persists user settings and preferences.
 
 ---
 
 ## 🤖 AI Tools & Models
 
-| Tool | Purpose | Size | Type |
+| Tool | Purpose | Size (Quantized) | Type |
 |------|---------|------|------|
-| **T5-small** | Dialogue generation | ~150-200MB | Text-to-Text Transformer |
-| **Transformers.js** | Model runtime | ~2MB | JavaScript ML Library |
+| **Qwen2.5-0.5B** | High-quality dialogue generation | ~300MB | LLM (Instruct) |
+| **SpeechT5** | Neural TTS generation | ~100MB | Encoder-Decoder |
+| **Transformers.js** | Client-side ML runtime | ~2MB | JS Library |
 | **Readability.js** | Content extraction | ~50KB | DOM Parser |
-
-### AI Model Details
-
-```
-T5-small (Text-to-Text Transfer Transformer)
-├── Architecture: Encoder-Decoder
-├── Parameters: 60M
-├── Quantization: 8-bit (for size reduction)
-├── Task: Text-to-Text Generation
-└── Use Case: Convert web content → Dialogue format
-```
 
 ---
 
@@ -184,30 +117,18 @@ T5-small (Text-to-Text Transfer Transformer)
 ```
 webpodcast/
 ├── 📁 src/
-│   ├── 📁 popup/              # React popup UI
-│   │   ├── App.jsx            # Main popup component
-│   │   ├── App.css            # Popup styles
-│   │   └── index.html         # Popup HTML
-│   ├── 📁 content/             # Content script
-│   │   └── contentScript.js   # Text extraction
-│   ├── 📁 background/         # Service worker
-│   │   └── serviceWorker.js   # Background tasks
-│   ├── 📁 ai/                 # AI integration
-│   │   └── dialogueConverter.js # T5-small dialogue conversion
-│   ├── 📁 tts/                # Text-to-speech
-│   │   └── ttsEngine.js       # TTS engine
-│   ├── 📁 utils/              # Utilities
-│   │   └── storage.js         # Chrome storage
-│   └── 📁 options/             # Settings page
-│       ├── Options.jsx
-│       ├── Options.css
-│       └── index.html
-├── 📁 public/                 # Static assets
-│   └── 📁 icons/              # Extension icons
-├── 📁 dist/                   # Built extension
-├── manifest.json              # Extension config
-├── package.json               # Dependencies
-└── vite.config.js             # Build config
+│   ├── 📁 ai/                 # AI model management & dialogue logic
+│   ├── 📁 background/         # Service Worker & Offscreen documents
+│   ├── 📁 content/             # In-page Widget & Content scripts
+│   ├── 📁 popup/              # Chrome extension popup (Entry point)
+│   ├── 📁 tts/                # Text-to-Speech engines
+│   ├── 📁 utils/              # Storage & helper utilities
+│   └── 📁 options/             # Settings & Configuration page
+├── 📁 public/                 # Static assets (icons, etc.)
+├── 📁 website/                # Vercel-deployed landing page
+├── manifest.json              # Extension manifest (MV3)
+├── vite.config.js             # Main Vite configuration
+└── vite.content.config.js      # Content script specific build config
 ```
 
 ---
@@ -221,187 +142,47 @@ webpodcast/
 
 ### Steps
 
-1. **Clone the repository**
+1. **Clone and Install**
    ```bash
    git clone https://github.com/swati2904/webpodcast.git
    cd webpodcast
-   ```
-
-2. **Install dependencies**
-   ```bash
    npm install
    ```
 
-3. **Build the extension**
+2. **Build the Project**
    ```bash
    npm run build
    ```
 
-4. **Load in Chrome**
-   - Open `chrome://extensions/`
-   - Enable "Developer mode" (top-right toggle)
-   - Click "Load unpacked"
-   - Select the `dist` folder
+3. **Load in Chrome**
+   - Navigate to `chrome://extensions/`
+   - Enable **Developer mode**
+   - Click **Load unpacked** and select the `dist` folder.
 
-5. **First Use**
-   - Click extension icon on any webpage
-   - Click "Start Podcast"
-   - Wait for AI model download (~150-200MB, one-time)
-   - Enjoy your podcast!
-
----
-
-## 💻 Development
-
-```bash
-# Development mode
-npm run dev
-
-# Build for production
-npm run build
-
-# Preview build
-npm run preview
-```
-
----
-
-## 🌐 Website Deployment
-
-The landing page is deployed on Vercel. To deploy updates:
-
-### Prerequisites
-- Vercel CLI installed: `npm install -g vercel`
-- Logged in to Vercel: `vercel login` (first time only)
-
-### Deploy Website
-
-```bash
-# Deploy to production
-npm run website:deploy
-```
-
-This will:
-1. Navigate to the `website` folder
-2. Deploy all files to Vercel production
-3. Provide you with the live URL
-
-### Local Website Development
-
-```bash
-# Run local server for website
-npm run website:dev
-```
-
-Opens at `http://localhost:3000`
-
-### Website Files
-- Landing page: `website/index.html`
-- Privacy policy: `website/privacy-policy.html`
-- Styles: `website/styles.css`
-- Config: `website/vercel.json`
-
----
-
-## 🎯 How It Works
-
-### Step-by-Step Process
-
-1. **📄 Text Extraction**
-   - Content script extracts main content from webpage
-   - Uses Readability.js to filter out ads/navigation
-   - Returns clean, readable content
-
-2. **🤖 AI Dialogue Conversion**
-   - T5-small model converts text to dialogue format
-   - Creates natural conversation between two speakers
-   - Rule-based post-processing adds transitions
-
-3. **🎙️ Voice Synthesis**
-   - Web Speech API synthesizes speech
-   - Two distinct voices alternate
-   - Natural pauses between speakers
-
-4. **🎵 Playback**
-   - User controls speed, pause, stop
-   - Progress tracking
-   - Settings persistence
-
----
-
-## 📊 Model Sizes
-
-```
-Extension Size Breakdown:
-├── Core Extension:     ~5-10MB
-├── T5-small Model:     ~150-200MB (cached after first download)
-├── TTS Voices:         ~50MB (when Piper integrated)
-└── Total (after setup): ~200-260MB (cached locally)
-```
-
----
-
-## 🎨 UI Features
-
-- ✨ **Modern Design**: Gradient backgrounds, smooth animations
-- 🎯 **Intuitive Controls**: Easy-to-use interface
-- 📊 **Progress Tracking**: Real-time progress indicators
-- ⚙️ **Settings Page**: One-time voice configuration
-- 🎚️ **Speed Control**: Adjustable playback speed
+4. **Start Listening**
+   - Visit any article or webpage.
+   - Click the 🎙️ floating widget button.
+   - Click **Start Podcast** (First run will download models ~300MB).
 
 ---
 
 ## 🔧 Configuration
 
-### Voice Settings
-- Select accents for Speaker 1 (Host/Interviewer)
-- Select accents for Speaker 2 (Expert/Guest)
-- Set default playback speed
-- Settings saved automatically
-
-### Supported Accents
-- 🇺🇸 American English
-- 🇬🇧 British English
-- 🇮🇳 Indian English
-- 🇦🇺 Australian English
-- 🇨🇦 Canadian English
-
----
-
-## 🐛 Troubleshooting
-
-| Issue | Solution |
-|-------|----------|
-| Model not loading | Check internet connection, reload extension |
-| No audio | Check browser volume, try different accents |
-| Content not extracted | Try different website, check browser console |
-| Extension crashes | Reload extension, check console for errors |
-
----
-
-## 📝 License
-
-MIT License - see [LICENSE](LICENSE) file for details
-
----
-
-## 🙏 Acknowledgments
-
-- **Transformers.js** - Client-side ML runtime
-- **T5-small** - Hugging Face model
-- **Readability.js** - Mozilla content extraction
-- **React** - UI framework
+Access the **Settings** via the gear icon ⚙️ in the widget or the extension options:
+- **Speaker Personalities**: Choose different accents for the Host and Guest.
+- **Theme**: Toggle between Night (Dark) and Day (Light) modes.
+- **Playback Speed**: Adjust from 0.5x to 2.0x.
+- **TTS Engine**: Switch between Web Speech API and Neural TTS (experimental).
 
 ---
 
 ## 📈 Future Enhancements
 
-- [ ] Piper TTS integration for better voice quality
-- [ ] More dialogue formats (interview, discussion, debate)
-- [ ] Multiple language support
-- [ ] Audio export (MP3 download)
-- [ ] Bookmark/save position
-- [ ] Text highlighting during playback
+- [ ] **Multi-Language Support**: Support for Spanish, French, German, etc.
+- [ ] **Speaker Customization**: Custom names and traits for AI speakers.
+- [ ] **Audio Export**: High-quality MP3 download of the full podcast.
+- [ ] **Interactive Q&A**: Ask the AI questions about the article during the podcast.
+- [ ] **Cloud Sync**: Sync settings across different browsers.
 
 ---
 
