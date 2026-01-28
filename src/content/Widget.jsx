@@ -251,7 +251,7 @@ function Widget() {
 
       {/* Widget panel */}
       {isOpen && (
-        <div className="webpodcast-widget">
+        <div className={`webpodcast-widget ${(isProcessing || isPlaying || showSettings) ? 'webpodcast-widget-expanded' : 'webpodcast-widget-collapsed'}`}>
           {!showSettings ? (
             <>
               <div className="webpodcast-header">
@@ -283,7 +283,14 @@ function Widget() {
 
               {isProcessing && (
                 <div className="webpodcast-processing">
-                  <div className="webpodcast-spinner"></div>
+                  <div className="webpodcast-spinner-container">
+                    <div className="webpodcast-spinner"></div>
+                    {modelProgress > 0 && (
+                      <div className="webpodcast-spinner-text">
+                        {Math.round(modelProgress)}%
+                      </div>
+                    )}
+                  </div>
                   <p>Processing content...</p>
                   {modelProgress > 0 && (
                     <div className="webpodcast-progress-bar">

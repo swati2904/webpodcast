@@ -175,8 +175,6 @@ function injectWidgetStyles() {
       bottom: 80px;
       right: 0;
       width: 414px; /* Increased by 15% from 360px base */
-      height: 600px; /* Fixed height */
-      max-height: calc(100vh - 120px);
       padding: 24px;
       background: var(--wp-bg-primary);
       color: var(--wp-text-primary);
@@ -188,6 +186,16 @@ function injectWidgetStyles() {
       display: flex;
       flex-direction: column;
       overflow: hidden; /* Disable scrolling on main container */
+      transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .webpodcast-widget-collapsed {
+      height: auto;
+    }
+
+    .webpodcast-widget-expanded {
+      height: 600px; /* Fixed height */
+      max-height: calc(100vh - 120px);
     }
     
     @keyframes slideUp {
@@ -338,8 +346,8 @@ function injectWidgetStyles() {
       font-size: 15px;
       font-weight: 500;
       background: rgba(255, 255, 255, 0.1);
-      color: white;
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: var(--wp-text-primary);
+      border: 1px solid var(--wp-border);
       border-radius: 14px;
       cursor: pointer;
       transition: all 0.2s ease;
@@ -350,10 +358,21 @@ function injectWidgetStyles() {
       gap: 8px;
     }
 
+    #webpodcast-widget-container[data-theme="light"] .webpodcast-btn-download {
+      background: rgba(0, 0, 0, 0.05);
+      border-color: rgba(0, 0, 0, 0.1);
+      color: #1e293b;
+    }
+
     .webpodcast-btn-download:hover {
       transform: translateY(-1px);
       background: rgba(255, 255, 255, 0.15);
-      border-color: rgba(255, 255, 255, 0.3);
+      border-color: var(--wp-border-hover);
+    }
+
+    #webpodcast-widget-container[data-theme="light"] .webpodcast-btn-download:hover {
+      background: rgba(0, 0, 0, 0.08);
+      border-color: rgba(0, 0, 0, 0.15);
     }
 
     .webpodcast-btn-download:active {
@@ -364,15 +383,31 @@ function injectWidgetStyles() {
       text-align: center;
       padding: 32px 0;
     }
+
+    .webpodcast-spinner-container {
+      position: relative;
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
     
     .webpodcast-spinner {
-      width: 40px;
-      height: 40px;
+      width: 100%;
+      height: 100%;
       border: 3px solid var(--wp-border);
       border-top-color: var(--wp-accent);
       border-radius: 50%;
       animation: spin 1s linear infinite;
-      margin: 0 auto 16px;
+    }
+
+    .webpodcast-spinner-text {
+      position: absolute;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--wp-text-primary);
     }
     
     @keyframes spin {
@@ -425,6 +460,8 @@ function injectWidgetStyles() {
     }
     
     .webpodcast-settings {
+      flex: 1;
+      overflow-y: auto;
       margin-top: 0;
     }
     
@@ -573,6 +610,7 @@ function injectWidgetStyles() {
     }
     
     .webpodcast-footer {
+      flex-shrink: 0;
       margin-top: 24px;
       text-align: center;
       padding-top: 20px;
@@ -794,7 +832,7 @@ if (document.readyState === 'loading') {
   startWithSetting();
 }
 
-// Listen for popup toggle or storage changes
+// Listen for messages from popup
 chrome.runtime.onMessage.addListener((message) => {
   if (message.type === 'toggle-widget') {
     ensureWidgetEnabled(message.enabled ?? true);
