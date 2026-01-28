@@ -118,22 +118,50 @@ export const widgetStyles = `
 }
 
 .webpodcast-btn-stop {
-  width: 100%;
-  padding: 14px 20px;
+  flex: 1;
+  padding: 12px 20px;
   font-size: 15px;
   font-weight: 600;
   background: #ff4757;
   color: white;
   border: none;
-  border-radius: 10px;
+  border-radius: 14px;
   cursor: pointer;
   transition: all 0.3s;
-  box-shadow: 0 4px 12px rgba(255, 71, 87, 0.3);
+  box-shadow: 0 4px 12px rgba(255, 71, 87, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .webpodcast-btn-stop:hover {
   transform: translateY(-2px);
   background: #ff3838;
+  box-shadow: 0 6px 20px rgba(255, 71, 87, 0.3);
+}
+
+.webpodcast-btn-download {
+  flex: 1;
+  padding: 12px 20px;
+  font-size: 15px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.webpodcast-btn-download:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .webpodcast-processing {
@@ -182,14 +210,18 @@ export const widgetStyles = `
 }
 
 .webpodcast-controls {
-  margin-bottom: 16px;
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
 .webpodcast-progress-info {
   text-align: center;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
   padding: 12px;
-  border-radius: 10px;
+  border-radius: 14px;
+  margin-top: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .webpodcast-progress-info p {

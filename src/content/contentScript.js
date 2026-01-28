@@ -317,27 +317,59 @@ function injectWidgetStyles() {
     }
     
     .webpodcast-btn-stop {
-      width: 100%;
-      padding: 14px 20px;
+      flex: 1;
+      padding: 12px 20px;
       font-size: 15px;
       font-weight: 500;
-      background: var(--wp-danger);
+      background: #ff4757;
       color: white;
       border: none;
-      border-radius: 12px;
+      border-radius: 14px;
       cursor: pointer;
       transition: all 0.2s ease;
-      box-shadow: var(--wp-shadow-sm);
+      box-shadow: 0 4px 12px rgba(255, 71, 87, 0.2);
       letter-spacing: -0.01em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
     
     .webpodcast-btn-stop:hover {
       transform: translateY(-1px);
-      background: var(--wp-danger-hover);
-      box-shadow: var(--wp-shadow-md);
+      background: #ff3838;
+      box-shadow: 0 6px 20px rgba(255, 71, 87, 0.3);
     }
     
     .webpodcast-btn-stop:active {
+      transform: translateY(0);
+    }
+
+    .webpodcast-btn-download {
+      flex: 1;
+      padding: 12px 20px;
+      font-size: 15px;
+      font-weight: 500;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      letter-spacing: -0.01em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .webpodcast-btn-download:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .webpodcast-btn-download:active {
       transform: translateY(0);
     }
     
@@ -384,15 +416,18 @@ function injectWidgetStyles() {
     }
     
     .webpodcast-controls {
-      margin-bottom: 16px;
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
     }
     
     .webpodcast-progress-info {
       text-align: center;
-      background: var(--wp-bg-secondary);
+      background: rgba(255, 255, 255, 0.08);
       padding: 14px;
-      border-radius: 12px;
-      border: 1px solid var(--wp-border);
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      margin-top: 0;
     }
     
     .webpodcast-progress-info p {
