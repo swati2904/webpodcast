@@ -311,72 +311,83 @@ function injectWidgetStyles() {
       box-shadow: 0 1px 4px rgba(79, 70, 229, 0.25);
     }
     
-    .webpodcast-btn-stop {
+    .webpodcast-btn-play-pause {
       flex: 1;
-      padding: 12px 20px;
-      font-size: 15px;
-      font-weight: 500;
-      background: #ff4757;
-      color: white;
-      border: none;
+      padding: 12px 16px;
+      font-size: 14px;
+      font-weight: 600;
       border-radius: 14px;
       cursor: pointer;
-      transition: all 0.2s ease;
-      box-shadow: 0 4px 12px rgba(255, 71, 87, 0.2);
-      letter-spacing: -0.01em;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
+      
+      /* Dark Mode (Default) */
+      background: rgba(129, 140, 248, 0.1);
+      color: #a5b4fc;
+      border: 1px solid rgba(165, 180, 252, 0.2);
+      box-shadow: 0 0 15px rgba(99, 102, 241, 0.1);
     }
-    
-    .webpodcast-btn-stop:hover {
+
+    .webpodcast-btn-play-pause:hover {
+      background: rgba(129, 140, 248, 0.2);
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
       transform: translateY(-1px);
-      background: #ff3838;
-      box-shadow: 0 6px 20px rgba(255, 71, 87, 0.3);
     }
-    
-    .webpodcast-btn-stop:active {
-      transform: translateY(0);
+
+    .webpodcast-btn-play-pause .webpodcast-icon {
+      font-size: 16px;
+    }
+
+    #webpodcast-widget-container[data-theme="light"] .webpodcast-btn-play-pause {
+      background: #ffffff;
+      color: #4f46e5;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    #webpodcast-widget-container[data-theme="light"] .webpodcast-btn-play-pause:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
     }
 
     .webpodcast-btn-download {
-      flex: 1;
+      flex: 2;
       padding: 12px 20px;
       font-size: 15px;
       font-weight: 500;
-      background: rgba(255, 255, 255, 0.1);
-      color: var(--wp-text-primary);
-      border: 1px solid var(--wp-border);
       border-radius: 14px;
       cursor: pointer;
-      transition: all 0.2s ease;
-      letter-spacing: -0.01em;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
-    }
 
-    #webpodcast-widget-container[data-theme="light"] .webpodcast-btn-download {
-      background: rgba(0, 0, 0, 0.05);
-      border-color: rgba(0, 0, 0, 0.1);
-      color: #1e293b;
+      /* Dark Mode (Default) */
+      background: rgba(255, 255, 255, 0.05);
+      color: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     .webpodcast-btn-download:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
       transform: translateY(-1px);
-      background: rgba(255, 255, 255, 0.15);
-      border-color: var(--wp-border-hover);
+    }
+
+    #webpodcast-widget-container[data-theme="light"] .webpodcast-btn-download {
+      background: #f8fafc;
+      color: #1e293b;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     }
 
     #webpodcast-widget-container[data-theme="light"] .webpodcast-btn-download:hover {
-      background: rgba(0, 0, 0, 0.08);
-      border-color: rgba(0, 0, 0, 0.15);
-    }
-
-    .webpodcast-btn-download:active {
-      transform: translateY(0);
+      background: #f1f5f9;
+      border-color: #cbd5e1;
     }
     
     .webpodcast-processing {

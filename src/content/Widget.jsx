@@ -64,6 +64,7 @@ function Widget() {
   const [showSettings, setShowSettings] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [targetProgress, setTargetProgress] = useState(0);
   const [displayProgress, setDisplayProgress] = useState(0);
@@ -219,6 +220,7 @@ function Widget() {
     setTargetProgress(0);
     setDisplayProgress(0);
     setIsComplete(false);
+    setIsPaused(false);
     setTempDialogue(null);
     setMessages([]);
     setActiveMessageId(null);
@@ -255,9 +257,20 @@ function Widget() {
     }
   };
 
+  const handleTogglePlay = () => {
+    if (isPaused) {
+      setIsPaused(false);
+      if (ttsEngine) ttsEngine.resume();
+    } else {
+      setIsPaused(true);
+      if (ttsEngine) ttsEngine.pause();
+    }
+  };
+
   const handleStop = () => {
     // Immediate UI update for responsive feel
     setIsPlaying(false);
+    setIsPaused(false);
     setProgress({ current: 0, total: 0 });
     setActiveMessageId(null);
     
@@ -311,10 +324,7 @@ function Widget() {
                   <button 
                     className="webpodcast-close-btn"
                     onClick={() => {
-                      // Stop any playback before closing
-                      if (ttsEngine && isPlaying) {
-                        ttsEngine.stop();
-                      }
+                      handleStop();
                       setIsOpen(false);
                     }}
                     title="Close"
@@ -367,8 +377,9 @@ function Widget() {
                   </div>
 
                   <div className="webpodcast-controls">
-                    <button className="webpodcast-btn-stop" onClick={handleStop}>
-                      ⏹️ Stop
+                    <button className="webpodcast-btn-play-pause" onClick={handleTogglePlay}>
+                      <span className="webpodcast-icon">{isPaused ? '▶' : 'Ⅱ'}</span>
+                      {isPaused ? 'Resume' : 'Pause'}
                     </button>
                     <button 
                       className="webpodcast-btn-download" 

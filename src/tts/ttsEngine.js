@@ -18,6 +18,9 @@ export class TTSEngine {
       voice2: null,
       speed: 1.0,
     };
+    this.isPaused = false;
+    this.audioContext = null;
+    this.currentAudioSource = null;
 
     this.loadVoices();
 
@@ -123,7 +126,12 @@ export class TTSEngine {
     this.currentIndex = 0;
 
     try {
-      for (let i = 0; i < segments.length; i++) {
+      for (let i = this.currentIndex; i < segments.length; i++) {
+        // Wait if paused
+        while (this.isPaused && this.isPlaying) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+
         if (!this.isPlaying) {
           // Stopped by user
           break;
@@ -216,18 +224,21 @@ export class TTSEngine {
    * Play raw audio buffer
    */
   async playAudioBuffer(audioData, samplingRate) {
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    if (!this.audioContext) {
+      this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    
     const float32Array = new Float32Array(audioData);
-    const buffer = audioContext.createBuffer(1, float32Array.length, samplingRate);
+    const buffer = this.audioContext.createBuffer(1, float32Array.length, samplingRate);
     buffer.getChannelData(0).set(float32Array);
     
-    const source = audioContext.createBufferSource();
+    const source = this.audioContext.createBufferSource();
     source.buffer = buffer;
-    source.connect(audioContext.destination);
+    source.connect(this.audioContext.destination);
     
     return new Promise((resolve) => {
       source.onended = () => {
-        audioContext.close();
+        this.currentAudioSource = null;
         resolve();
       };
       source.start();
@@ -239,14 +250,14 @@ export class TTSEngine {
    * Pause playback
    */
   pause() {
-    if (this.isPlaying) {
-      this.isPlaying = false;
-      try {
-        this.synthesis.pause();
-      } catch (error) {
-        // If pause fails, just cancel
-        this.synthesis.cancel();
+    this.isPaused = true;
+    try {
+      if (this.audioContext && this.audioContext.state === 'running') {
+        this.audioContext.suspend();
       }
+      this.synthesis.pause();
+    } catch (error) {
+      console.error('Error pausing:', error);
     }
   }
 
@@ -254,8 +265,15 @@ export class TTSEngine {
    * Resume playback
    */
   resume() {
-    this.isPlaying = true;
-    this.synthesis.resume();
+    this.isPaused = false;
+    try {
+      if (this.audioContext && this.audioContext.state === 'suspended') {
+        this.audioContext.resume();
+      }
+      this.synthesis.resume();
+    } catch (error) {
+      console.error('Error resuming:', error);
+    }
   }
 
   /**
@@ -264,6 +282,7 @@ export class TTSEngine {
   stop() {
     // Set flag first to prevent new utterances
     this.isPlaying = false;
+    this.isPaused = false;
     this.queue = [];
     this.currentIndex = 0;
 
@@ -276,6 +295,11 @@ export class TTSEngine {
       if (this.currentAudioSource) {
         this.currentAudioSource.stop();
         this.currentAudioSource = null;
+      }
+
+      if (this.audioContext) {
+        this.audioContext.close();
+        this.audioContext = null;
       }
     } catch (error) {
       // Ignore errors - cancel is best effort
