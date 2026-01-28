@@ -405,9 +405,16 @@ function injectWidgetStyles() {
 
     .webpodcast-spinner-text {
       position: absolute;
-      font-size: 12px;
-      font-weight: 600;
+      font-size: 13px;
+      font-weight: 700;
       color: var(--wp-text-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
     }
     
     @keyframes spin {
