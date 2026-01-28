@@ -65,7 +65,10 @@ function Widget() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
-  const [modelProgress, setModelProgress] = useState(0);
+  const [targetProgress, setTargetProgress] = useState(0);
+  const [displayProgress, setDisplayProgress] = useState(0);
+  const [isComplete, setIsComplete] = useState(false);
+  const [tempDialogue, setTempDialogue] = useState(null);
   const [messages, setMessages] = useState([]);
   const [activeMessageId, setActiveMessageId] = useState(null);
   const [settings, setSettings] = useState({
@@ -78,6 +81,46 @@ function Widget() {
   const [ttsEngine, setTtsEngine] = useState(null);
   const scrollContainerRef = useRef(null);
   const containerRef = useRef(null);
+
+  // Smooth progress animation loop
+  useEffect(() => {
+    let animationFrame;
+    if (isProcessing && displayProgress < targetProgress) {
+      const animate = () => {
+        setDisplayProgress(prev => {
+          if (prev < targetProgress) {
+            // Speed up the closer we get to the target, but keep it smooth
+            const diff = targetProgress - prev;
+            const step = Math.max(0.1, diff * 0.1);
+            return prev + step;
+          }
+          return prev;
+        });
+        animationFrame = requestAnimationFrame(animate);
+      };
+      animationFrame = requestAnimationFrame(animate);
+    }
+    return () => cancelAnimationFrame(animationFrame);
+  }, [isProcessing, targetProgress, displayProgress]);
+
+  // Handle transition to main screen only after 100% is reached
+  useEffect(() => {
+    if (isProcessing && displayProgress >= 99.9 && isComplete) {
+      setDisplayProgress(100);
+      const timeout = setTimeout(() => {
+        setIsProcessing(false);
+        setIsPlaying(true);
+        setIsComplete(false);
+        
+        // Start playback if we have dialogue
+        if (tempDialogue) {
+          startPlayback(tempDialogue);
+          setTempDialogue(null);
+        }
+      }, 800); // 800ms delay to show the 100% / Ready state
+      return () => clearTimeout(timeout);
+    }
+  }, [displayProgress, isComplete, isProcessing, tempDialogue]);
 
   useEffect(() => {
     // Initialize TTS engine
@@ -107,24 +150,20 @@ function Widget() {
     // Listen for model loading progress
     const messageListener = (message) => {
       if (message.type === 'model-load-progress') {
-        // Ensure progress is between 0-100
-        const progress = Math.max(0, Math.min(100, message.progress * 100));
-        setModelProgress(progress);
+        // Map 0-100% model loading to 10-90% range for UI
+        const realProgress = Math.max(0, Math.min(100, message.progress * 100));
+        const uiTarget = 10 + (realProgress * 0.8);
+        setTargetProgress(prev => Math.max(prev, uiTarget));
       }
     };
     chrome.runtime.onMessage.addListener(messageListener);
 
     // Preload model in background when widget opens (non-blocking)
-    // This makes the first conversion much faster
-    initializeModel().catch(() => {
-      // Silently fail - model will load when convertToDialogue is called
-    });
+    initializeModel().catch(() => {});
 
     return () => {
       chrome.runtime.onMessage.removeListener(messageListener);
-      if (engine) {
-        engine.stop();
-      }
+      if (engine) engine.stop();
     };
   }, []);
 
@@ -135,79 +174,84 @@ function Widget() {
     }
   }, [settings.theme]);
 
+  const startPlayback = (dialogueSegments) => {
+    setProgress({ current: 0, total: dialogueSegments.length });
+
+    // Callback when segment starts - add message to UI
+    const onSegmentStart = (index, segment) => {
+      const messageId = `msg-${index}-${Date.now()}`;
+      const newMessage = {
+        id: messageId,
+        speaker: segment.speaker,
+        text: segment.text,
+        timestamp: Date.now()
+      };
+      
+      setMessages(prev => [...prev, newMessage]);
+      setActiveMessageId(messageId);
+    };
+
+    // Callback when segment ends - remove active state
+    const onSegmentEnd = (index, segment) => {
+      setActiveMessageId(null);
+    };
+
+    // Play dialogue (this is async but non-blocking)
+    ttsEngine.speakDialogue(
+      dialogueSegments,
+      (current, total) => {
+        setProgress({ current, total });
+      },
+      onSegmentStart,
+      onSegmentEnd
+    ).then(() => {
+      setIsPlaying(false);
+      setActiveMessageId(null);
+    }).catch((error) => {
+      console.error('Playback error:', error);
+      setIsPlaying(false);
+      setActiveMessageId(null);
+    });
+  };
+
   const handleConvert = async () => {
     setIsProcessing(true);
-    setModelProgress(0);
-    // Clear messages for new conversation
+    setTargetProgress(0);
+    setDisplayProgress(0);
+    setIsComplete(false);
+    setTempDialogue(null);
     setMessages([]);
     setActiveMessageId(null);
 
-    try {
-      // Extract content directly since we're in the content script context
-      // This is fast (Readability is optimized)
-      const content = await extractPageContent();
+    // Extraction progress (0-10%)
+    setTargetProgress(10);
 
+    try {
+      // Extract content
+      const content = await extractPageContent();
+      
       if (!content || !content.text || content.text.length < 100) {
         alert('Not enough content found on this page. Please try a different page.');
         setIsProcessing(false);
         return;
       }
 
-      const { title, text } = content;
-
-      // Convert to dialogue (model should be preloaded, so this is faster)
-      const dialogueSegments = await convertToDialogue(text, title);
-
+      // Start the heavy work
+      const dialogueSegments = await convertToDialogue(content.text, content.title);
+      
       if (!dialogueSegments || dialogueSegments.length === 0) {
         throw new Error('Failed to generate dialogue');
       }
 
-      // Start playback immediately
-      setIsProcessing(false);
-      setIsPlaying(true);
-      setProgress({ current: 0, total: dialogueSegments.length });
+      // Store results and set target to 100
+      setTempDialogue(dialogueSegments);
+      setTargetProgress(100);
+      setIsComplete(true);
 
-      // Callback when segment starts - add message to UI
-      const onSegmentStart = (index, segment) => {
-        const messageId = `msg-${index}-${Date.now()}`;
-        const newMessage = {
-          id: messageId,
-          speaker: segment.speaker,
-          text: segment.text,
-          timestamp: Date.now()
-        };
-        
-        setMessages(prev => [...prev, newMessage]);
-        setActiveMessageId(messageId);
-      };
-
-      // Callback when segment ends - remove active state
-      const onSegmentEnd = (index, segment) => {
-        setActiveMessageId(null);
-      };
-
-      // Play dialogue (this is async but non-blocking)
-      ttsEngine.speakDialogue(
-        dialogueSegments,
-        (current, total) => {
-          setProgress({ current, total });
-        },
-        onSegmentStart,
-        onSegmentEnd
-      ).then(() => {
-        setIsPlaying(false);
-        setActiveMessageId(null);
-      }).catch((error) => {
-        console.error('Playback error:', error);
-        setIsPlaying(false);
-        setActiveMessageId(null);
-      });
     } catch (error) {
       console.error('Error:', error);
       alert(`Error: ${error.message}`);
       setIsProcessing(false);
-      setIsPlaying(false);
-      setActiveMessageId(null);
     }
   };
 
@@ -286,20 +330,21 @@ function Widget() {
                   <div className="webpodcast-spinner-container">
                     <div className="webpodcast-spinner"></div>
                     <div className="webpodcast-spinner-text">
-                      {Math.round(modelProgress)}%
+                      {Math.round(displayProgress)}%
                     </div>
                   </div>
                   <p>Processing content...</p>
-                  {modelProgress > 0 && (
-                    <div className="webpodcast-progress-bar">
-                      <div 
-                        className="webpodcast-progress-fill" 
-                        style={{ width: `${Math.min(100, modelProgress)}%` }}
-                      ></div>
-                    </div>
-                  )}
+                  <div className="webpodcast-progress-bar">
+                    <div 
+                      className="webpodcast-progress-fill" 
+                      style={{ width: `${displayProgress}%` }}
+                    ></div>
+                  </div>
                   <p className="webpodcast-progress-text">
-                    {modelProgress > 0 ? `Loading AI model: ${Math.min(100, Math.round(modelProgress))}%` : 'Extracting content...'}
+                    {displayProgress < 10 && 'Extracting page content...'}
+                    {displayProgress >= 10 && displayProgress < 90 && 'Loading AI models...'}
+                    {displayProgress >= 90 && displayProgress < 100 && 'AI is thinking... Generating your podcast'}
+                    {displayProgress >= 100 && 'Ready!'}
                   </p>
                 </div>
               )}
