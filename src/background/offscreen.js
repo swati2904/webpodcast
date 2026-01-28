@@ -6,39 +6,58 @@ env.useBrowserCache = true;
 
 let generator = null;
 let ttsModel = null;
+let isModelLoading = false;
 
 // Listen for messages from the service worker
 window.addEventListener('message', async (event) => {
     // We'll use chrome.runtime.onMessage instead for cleaner communication
 });
 
-chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.target !== 'offscreen') return;
 
-    try {
-        switch (message.type) {
-            case 'generate-dialogue':
-                const dialogue = await handleGenerateDialogue(message.data);
-                sendResponse({ success: true, data: dialogue });
-                break;
-            case 'generate-tts':
-                const audioData = await handleGenerateTTS(message.data);
-                sendResponse({ success: true, data: audioData });
-                break;
-            case 'init-models':
-                await initModels();
-                sendResponse({ success: true });
-                break;
+    const handleMessage = async () => {
+        console.log('Offscreen received message:', message.type);
+        try {
+            switch (message.type) {
+                case 'generate-dialogue':
+                    const dialogue = await handleGenerateDialogue(message.data);
+                    sendResponse({ success: true, data: dialogue });
+                    break;
+                case 'generate-tts':
+                    const audioData = await handleGenerateTTS(message.data);
+                    sendResponse({ success: true, data: audioData });
+                    break;
+                case 'init-models':
+                    await initModels();
+                    sendResponse({ success: true });
+                    break;
+                default:
+                    sendResponse({ success: false, error: 'Unknown message type' });
+            }
+        } catch (error) {
+            console.error('Offscreen error processing message:', message.type, error);
+            sendResponse({ success: false, error: error.message || String(error) });
         }
-    } catch (error) {
-        console.error('Offscreen error:', error);
-        sendResponse({ success: false, error: error.message });
-    }
-    return true;
+    };
+
+    handleMessage();
+    return true; // Keep channel open
 });
 
 async function initModels() {
-    if (!generator) {
+    if (generator) return;
+    
+    if (isModelLoading) {
+        while (isModelLoading) {
+            await new Promise(r => setTimeout(r, 100));
+        }
+        return;
+    }
+
+    isModelLoading = true;
+    console.log('Loading AI model in offscreen...');
+    try {
         generator = await pipeline('text2text-generation', 'Xenova/Qwen2.5-0.5B-Instruct', {
             progress_callback: (progress) => {
                 chrome.runtime.sendMessage({
@@ -48,6 +67,12 @@ async function initModels() {
                 });
             }
         });
+        console.log('AI model loaded successfully');
+    } catch (error) {
+        console.error('Failed to load AI model:', error);
+        throw error;
+    } finally {
+        isModelLoading = false;
     }
 }
 

@@ -39,7 +39,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (request.type === 'generate-dialogue-request') {
-    handleDialogueRequest(request.data).then(sendResponse);
+    handleDialogueRequest(request.data)
+      .then(response => sendResponse(response))
+      .catch(error => sendResponse({ success: false, error: error.message }));
     return true;
   }
 });
