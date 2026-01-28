@@ -35,7 +35,9 @@ export const widgetStyles = `
   position: absolute;
   bottom: 70px;
   right: 0;
-  width: 320px;
+  width: 414px; /* Increased by 15% from 360px base */
+  height: 600px; /* Fixed height */
+  max-height: calc(100vh - 100px);
   padding: 20px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
@@ -43,8 +45,9 @@ export const widgetStyles = `
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   pointer-events: all;
   animation: slideUp 0.3s ease-out;
-  max-height: calc(100vh - 100px);
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* Disable scrolling on main container */
 }
 
 @keyframes slideUp {
@@ -59,6 +62,7 @@ export const widgetStyles = `
 }
 
 .webpodcast-header {
+  flex-shrink: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -92,6 +96,7 @@ export const widgetStyles = `
 }
 
 .webpodcast-subtitle {
+  flex-shrink: 0;
   font-size: 12px;
   opacity: 0.95;
   margin: 0 0 20px 0;
@@ -206,16 +211,41 @@ export const widgetStyles = `
 }
 
 .webpodcast-playing {
-  margin: 16px 0;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.webpodcast-chat-container {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 8px;
+  margin-bottom: 16px;
 }
 
 .webpodcast-controls {
+  flex-shrink: 0;
   display: flex;
   gap: 12px;
   margin-bottom: 12px;
+  padding-top: 8px;
 }
 
 .webpodcast-progress-info {
+  flex-shrink: 0;
   text-align: center;
   background: rgba(255, 255, 255, 0.08);
   padding: 12px;
@@ -230,7 +260,43 @@ export const widgetStyles = `
   font-weight: 500;
 }
 
+.webpodcast-message {
+  margin-bottom: 12px;
+  display: flex;
+  width: 100%;
+}
+
+.webpodcast-message-bubble {
+  max-width: 85%;
+  padding: 12px 16px;
+  border-radius: 16px;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.webpodcast-message-speaker1 .webpodcast-message-bubble {
+  background: rgba(0, 150, 255, 0.2);
+  border-color: rgba(0, 150, 255, 0.3);
+  border-bottom-left-radius: 4px;
+}
+
+.webpodcast-message-speaker2 .webpodcast-message-bubble {
+  background: rgba(150, 0, 255, 0.2);
+  border-color: rgba(150, 0, 255, 0.3);
+  border-bottom-right-radius: 4px;
+}
+
+.webpodcast-message-text {
+  font-size: 14px;
+  line-height: 1.5;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: white;
+}
+
 .webpodcast-settings {
+  flex: 1;
+  overflow-y: auto;
   margin-top: 20px;
   padding-top: 16px;
   border-top: 1px solid rgba(255, 255, 255, 0.25);
@@ -285,22 +351,8 @@ export const widgetStyles = `
   padding-right: 35px;
 }
 
-.webpodcast-setting-item select:hover {
-  background-color: rgba(255, 255, 255, 0.3);
-  border-color: rgba(255, 255, 255, 0.5);
-}
-
-.webpodcast-setting-item select:focus {
-  background-color: rgba(255, 255, 255, 0.25);
-  border-color: rgba(255, 255, 255, 0.6);
-}
-
-.webpodcast-setting-item select option {
-  background: #667eea;
-  color: white;
-}
-
 .webpodcast-footer {
+  flex-shrink: 0;
   margin-top: 20px;
   text-align: center;
   padding-top: 16px;
@@ -324,7 +376,27 @@ export const widgetStyles = `
   background: rgba(255, 255, 255, 0.3);
   border-color: rgba(255, 255, 255, 0.5);
 }
-`;
+
+.webpodcast-widget::-webkit-scrollbar,
+.webpodcast-chat-container::-webkit-scrollbar,
+.webpodcast-settings::-webkit-scrollbar {
+  width: 6px;
+}
+
+.webpodcast-widget::-webkit-scrollbar-track,
+.webpodcast-chat-container::-webkit-scrollbar-track,
+.webpodcast-settings::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.webpodcast-widget::-webkit-scrollbar-thumb,
+.webpodcast-chat-container::-webkit-scrollbar-thumb,
+.webpodcast-settings::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+}
+\`;
 
 // Inject styles into the page
 export function injectStyles() {
