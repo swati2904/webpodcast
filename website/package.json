@@ -1,7 +1,7 @@
 {
   "name": "webpodify-website",
   "version": "1.0.0",
-  "description": "WebPodify landing page",
+  "description": "WebPodify - Transform Web Content Into Podcasts with AI",
   "scripts": {
     "dev": "npx serve . -p 3000",
     "build": "echo 'Static site - no build needed'",
