@@ -6,7 +6,7 @@
 
 *100% Client-Side • Free • No Server Required • Privacy Focused*
 
-[![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-4285F4?logo=google-chrome&logoColor=white)](https://chrome.google.com/webstore)
+[![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-4285F4?logo=google-chrome&logoColor=white)](https://chromewebstore.google.com/detail/webpodify/egoaecpfddlconbhfkhomgklgbjhhkhl)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![React](https://img.shields.io/badge/React-18.2-blue?logo=react)](https://reactjs.org/)
 [![AI](https://img.shields.io/badge/AI-Qwen--2.5--0.5B-orange?logo=huggingface)](https://huggingface.co/Xenova/Qwen2.5-0.5B-Instruct)
