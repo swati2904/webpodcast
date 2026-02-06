@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "WebPodify",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Convert any webpage to a 2-person podcast-style conversation",
   "permissions": ["activeTab", "storage", "offscreen"],
   "host_permissions": ["<all_urls>"],
